@@ -1,84 +1,75 @@
-import { createClient } from '@/lib/supabase/server'
+import { connectDB } from '@/lib/db'
+import {
+  Worker,
+  MedicalRecord,
+  Certificate,
+  MedicalExam,
+} from '@/lib/models'
+import { getProfile } from '@/lib/auth-server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, FileText, Award, TestTube, AlertTriangle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user?.id)
-    .single()
+  const profile = await getProfile()
 
-  // Get counts for dashboard stats
-  const { count: workersCount } = await supabase
-    .from('workers')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'active')
+  await connectDB()
 
-  const { count: recordsCount } = await supabase
-    .from('medical_records')
-    .select('*', { count: 'exact', head: true })
+  const [workersCount, recordsCount, certificatesCount, examsCount] =
+    await Promise.all([
+      Worker.countDocuments({ status: 'active' }),
+      MedicalRecord.countDocuments(),
+      Certificate.countDocuments(),
+      MedicalExam.countDocuments(),
+    ])
 
-  const { count: certificatesCount } = await supabase
-    .from('certificates')
-    .select('*', { count: 'exact', head: true })
-
-  const { count: examsCount } = await supabase
-    .from('medical_exams')
-    .select('*', { count: 'exact', head: true })
-
-  // Get certificates expiring soon (next 30 days)
   const thirtyDaysFromNow = new Date()
   thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
-  
-  const { data: expiringCertificates } = await supabase
-    .from('certificates')
-    .select('*, worker:workers(first_name, last_name, employee_code)')
-    .gte('expiry_date', new Date().toISOString().split('T')[0])
-    .lte('expiry_date', thirtyDaysFromNow.toISOString().split('T')[0])
-    .order('expiry_date', { ascending: true })
-    .limit(5)
+  const now = new Date()
 
-  // Get recent workers
-  const { data: recentWorkers } = await supabase
-    .from('workers')
-    .select('*, company:companies(name)')
-    .order('created_at', { ascending: false })
-    .limit(5)
+  const [expiringCertificates, recentWorkers] = await Promise.all([
+    Certificate.find({
+      expiry_date: { $gte: now, $lte: thirtyDaysFromNow },
+    })
+      .sort({ expiry_date: 1 })
+      .limit(5)
+      .populate('worker_id', 'first_name last_name employee_code')
+      .lean(),
+    Worker.find()
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate('company_id', 'name')
+      .lean(),
+  ])
 
   const stats = [
-    { 
-      name: 'Trabajadores Activos', 
-      value: workersCount || 0, 
-      icon: Users, 
+    {
+      name: 'Trabajadores Activos',
+      value: workersCount,
+      icon: Users,
       href: '/dashboard/trabajadores',
-      color: 'bg-primary/10 text-primary'
+      color: 'bg-primary/10 text-primary',
     },
-    { 
-      name: 'Expedientes Médicos', 
-      value: recordsCount || 0, 
-      icon: FileText, 
+    {
+      name: 'Expedientes Médicos',
+      value: recordsCount,
+      icon: FileText,
       href: '/dashboard/expedientes',
-      color: 'bg-accent/10 text-accent'
+      color: 'bg-accent/10 text-accent',
     },
-    { 
-      name: 'Constancias Emitidas', 
-      value: certificatesCount || 0, 
-      icon: Award, 
+    {
+      name: 'Constancias Emitidas',
+      value: certificatesCount,
+      icon: Award,
       href: '/dashboard/constancias',
-      color: 'bg-chart-4/20 text-chart-4'
+      color: 'bg-chart-4/20 text-chart-4',
     },
-    { 
-      name: 'Exámenes Registrados', 
-      value: examsCount || 0, 
-      icon: TestTube, 
+    {
+      name: 'Exámenes Registrados',
+      value: examsCount,
+      icon: TestTube,
       href: '/dashboard/examenes',
-      color: 'bg-chart-3/20 text-chart-3'
+      color: 'bg-chart-3/20 text-chart-3',
     },
   ]
 
@@ -93,7 +84,6 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <Link key={stat.name} href={stat.href}>
@@ -115,7 +105,6 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Expiring Certificates */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -129,19 +118,23 @@ export default async function DashboardPage() {
           <CardContent>
             {expiringCertificates && expiringCertificates.length > 0 ? (
               <div className="space-y-3">
-                {expiringCertificates.map((cert: any) => (
-                  <div key={cert.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                {expiringCertificates.map((cert: { _id: string; expiry_date: Date; worker_id: { first_name: string; last_name: string; employee_code: string } }) => (
+                  <div
+                    key={String(cert._id)}
+                    className="flex items-center justify-between rounded-lg border border-border p-3"
+                  >
                     <div>
                       <p className="font-medium">
-                        {cert.worker?.first_name} {cert.worker?.last_name}
+                        {cert.worker_id?.first_name} {cert.worker_id?.last_name}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {cert.worker?.employee_code}
+                        {cert.worker_id?.employee_code}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-warning">
-                        Vence: {new Date(cert.expiry_date).toLocaleDateString('es-MX')}
+                        Vence:{' '}
+                        {new Date(cert.expiry_date).toLocaleDateString('es-MX')}
                       </p>
                     </div>
                   </div>
@@ -158,7 +151,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Recent Workers */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -172,11 +164,15 @@ export default async function DashboardPage() {
           <CardContent>
             {recentWorkers && recentWorkers.length > 0 ? (
               <div className="space-y-3">
-                {recentWorkers.map((worker: any) => (
-                  <div key={worker.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                {recentWorkers.map((worker: { _id: string; first_name: string; last_name: string; position?: string; company_id?: { name: string } }) => (
+                  <div
+                    key={String(worker._id)}
+                    className="flex items-center justify-between rounded-lg border border-border p-3"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                        {worker.first_name.charAt(0)}{worker.last_name.charAt(0)}
+                        {worker.first_name?.charAt(0)}
+                        {worker.last_name?.charAt(0)}
                       </div>
                       <div>
                         <p className="font-medium">
@@ -188,7 +184,7 @@ export default async function DashboardPage() {
                       </div>
                     </div>
                     <span className="rounded-full bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground">
-                      {worker.company?.name}
+                      {worker.company_id?.name}
                     </span>
                   </div>
                 ))}
@@ -199,8 +195,8 @@ export default async function DashboardPage() {
                 <p className="text-muted-foreground">
                   No hay trabajadores registrados
                 </p>
-                <Link 
-                  href="/dashboard/trabajadores/nuevo" 
+                <Link
+                  href="/dashboard/trabajadores/nuevo"
                   className="mt-2 text-sm text-primary hover:underline"
                 >
                   Registrar primer trabajador

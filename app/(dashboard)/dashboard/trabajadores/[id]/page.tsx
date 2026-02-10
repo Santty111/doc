@@ -1,24 +1,28 @@
-import { createClient } from '@/lib/supabase/server'
+import { connectDB } from '@/lib/db'
+import { Worker, MedicalRecord, Certificate, MedicalExam } from '@/lib/models'
 import { notFound } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { 
-  User, 
-  Building2, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Calendar, 
-  FileText, 
-  Award, 
+import {
+  User,
+  Building2,
+  Phone,
+  Mail,
+  MapPin,
+  FileText,
+  Award,
   TestTube,
   Edit,
-  ArrowLeft
+  ArrowLeft,
 } from 'lucide-react'
 import Link from 'next/link'
-import type { Worker, MedicalRecord, Certificate, MedicalExam } from '@/lib/types'
-import { CERTIFICATE_TYPE_LABELS, CERTIFICATE_RESULT_LABELS } from '@/lib/types'
+import type { Worker as WorkerType, MedicalRecord as MRType, Certificate as CertType, MedicalExam as ExamType } from '@/lib/types'
+import { CERTIFICATE_TYPE_LABELS } from '@/lib/types'
+
+function norm(d: { _id: unknown; [k: string]: unknown }) {
+  return { ...d, id: String(d._id) }
+}
 
 export default async function TrabajadorDetailPage({
   params,
@@ -26,40 +30,36 @@ export default async function TrabajadorDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const supabase = await createClient()
-  
-  const { data: worker } = await supabase
-    .from('workers')
-    .select('*, company:companies(name)')
-    .eq('id', id)
-    .single()
+  await connectDB()
 
-  if (!worker) {
-    notFound()
+  const worker = await Worker.findById(id)
+    .populate('company_id', 'name')
+    .lean()
+  if (!worker) notFound()
+
+  const [records, certificates, exams] = await Promise.all([
+    MedicalRecord.find({ worker_id: id })
+      .sort({ record_date: -1 })
+      .limit(3)
+      .lean(),
+    Certificate.find({ worker_id: id })
+      .sort({ issue_date: -1 })
+      .limit(3)
+      .lean(),
+    MedicalExam.find({ worker_id: id })
+      .sort({ exam_date: -1 })
+      .limit(3)
+      .lean(),
+  ])
+
+  const workerNorm = norm(worker as { _id: unknown; [k: string]: unknown }) as WorkerType & {
+    company?: { name: string }
   }
+  workerNorm.company = (worker as { company_id?: { name: string } }).company_id
+    ? { name: (worker as { company_id: { name: string } }).company_id.name }
+    : undefined
 
-  const { data: records } = await supabase
-    .from('medical_records')
-    .select('*')
-    .eq('worker_id', id)
-    .order('record_date', { ascending: false })
-    .limit(3)
-
-  const { data: certificates } = await supabase
-    .from('certificates')
-    .select('*')
-    .eq('worker_id', id)
-    .order('issue_date', { ascending: false })
-    .limit(3)
-
-  const { data: exams } = await supabase
-    .from('medical_exams')
-    .select('*')
-    .eq('worker_id', id)
-    .order('exam_date', { ascending: false })
-    .limit(3)
-
-  const getStatusBadge = (status: Worker['status']) => {
+  const getStatusBadge = (status: WorkerType['status']) => {
     switch (status) {
       case 'active':
         return <Badge className="bg-accent text-accent-foreground">Activo</Badge>
@@ -72,7 +72,7 @@ export default async function TrabajadorDetailPage({
     }
   }
 
-  const getResultBadge = (result: Certificate['result']) => {
+  const getResultBadge = (result: CertType['result']) => {
     switch (result) {
       case 'apto':
         return <Badge className="bg-accent text-accent-foreground">Apto</Badge>
@@ -87,6 +87,10 @@ export default async function TrabajadorDetailPage({
     }
   }
 
+  const recordsNorm = records.map((r) => norm(r as { _id: unknown; [k: string]: unknown }) as MRType)
+  const certsNorm = certificates.map((c) => norm(c as { _id: unknown; [k: string]: unknown }) as CertType)
+  const examsNorm = exams.map((e) => norm(e as { _id: unknown; [k: string]: unknown }) as ExamType)
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -98,15 +102,15 @@ export default async function TrabajadorDetailPage({
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              {worker.first_name} {worker.last_name}
+              {workerNorm.first_name} {workerNorm.last_name}
             </h1>
             <p className="text-muted-foreground">
-              {worker.employee_code} - {(worker as any).company?.name}
+              {workerNorm.employee_code} - {workerNorm.company?.name}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {getStatusBadge(worker.status)}
+          {getStatusBadge(workerNorm.status)}
           <Link href={`/dashboard/trabajadores/${id}/editar`}>
             <Button variant="outline">
               <Edit className="mr-2 h-4 w-4" />
@@ -117,7 +121,6 @@ export default async function TrabajadorDetailPage({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Personal Info */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -129,62 +132,64 @@ export default async function TrabajadorDetailPage({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">CURP</p>
-                <p className="font-medium font-mono">{worker.curp || '-'}</p>
+                <p className="font-medium font-mono">{workerNorm.curp || '-'}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">RFC</p>
-                <p className="font-medium font-mono">{worker.rfc || '-'}</p>
+                <p className="font-medium font-mono">{workerNorm.rfc || '-'}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">NSS (IMSS)</p>
-                <p className="font-medium font-mono">{worker.nss || '-'}</p>
+                <p className="font-medium font-mono">{workerNorm.nss || '-'}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Fecha de Nacimiento</p>
                 <p className="font-medium">
-                  {worker.birth_date 
-                    ? new Date(worker.birth_date).toLocaleDateString('es-MX') 
+                  {workerNorm.birth_date
+                    ? new Date(workerNorm.birth_date as string).toLocaleDateString('es-MX')
                     : '-'}
                 </p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Género</p>
                 <p className="font-medium">
-                  {worker.gender === 'M' ? 'Masculino' : worker.gender === 'F' ? 'Femenino' : worker.gender || '-'}
+                  {workerNorm.gender === 'M'
+                    ? 'Masculino'
+                    : workerNorm.gender === 'F'
+                      ? 'Femenino'
+                      : workerNorm.gender || '-'}
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Contact Info */}
         <Card>
           <CardHeader>
             <CardTitle>Contacto</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {worker.phone && (
+            {workerNorm.phone && (
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{worker.phone}</span>
+                <span>{workerNorm.phone}</span>
               </div>
             )}
-            {worker.email && (
+            {workerNorm.email && (
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{worker.email}</span>
+                <span>{workerNorm.email}</span>
               </div>
             )}
-            {worker.address && (
+            {workerNorm.address && (
               <div className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <span>{worker.address}</span>
+                <span>{workerNorm.address}</span>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Work Info */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -195,24 +200,23 @@ export default async function TrabajadorDetailPage({
           <CardContent className="space-y-4">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Departamento</p>
-              <p className="font-medium">{worker.department || '-'}</p>
+              <p className="font-medium">{workerNorm.department || '-'}</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Puesto</p>
-              <p className="font-medium">{worker.position || '-'}</p>
+              <p className="font-medium">{workerNorm.position || '-'}</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Fecha de Ingreso</p>
               <p className="font-medium">
-                {worker.hire_date 
-                  ? new Date(worker.hire_date).toLocaleDateString('es-MX') 
+                {workerNorm.hire_date
+                  ? new Date(workerNorm.hire_date as string).toLocaleDateString('es-MX')
                   : '-'}
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Recent Medical Records */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -220,24 +224,31 @@ export default async function TrabajadorDetailPage({
               Expedientes
             </CardTitle>
             <Link href={`/dashboard/expedientes/nuevo?trabajador=${id}`}>
-              <Button size="sm" variant="outline">Nuevo</Button>
+              <Button size="sm" variant="outline">
+                Nuevo
+              </Button>
             </Link>
           </CardHeader>
           <CardContent>
-            {records && records.length > 0 ? (
+            {recordsNorm.length > 0 ? (
               <div className="space-y-3">
-                {records.map((record: MedicalRecord) => (
-                  <div key={record.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                {recordsNorm.map((record) => (
+                  <div
+                    key={record.id}
+                    className="flex items-center justify-between rounded-lg border border-border p-3"
+                  >
                     <div>
                       <p className="text-sm font-medium">
-                        {new Date(record.record_date).toLocaleDateString('es-MX')}
+                        {new Date(record.record_date as string).toLocaleDateString('es-MX')}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Tipo: {record.blood_type || 'N/A'}
                       </p>
                     </div>
                     <Link href={`/dashboard/expedientes/${record.id}`}>
-                      <Button size="sm" variant="ghost">Ver</Button>
+                      <Button size="sm" variant="ghost">
+                        Ver
+                      </Button>
                     </Link>
                   </div>
                 ))}
@@ -250,7 +261,6 @@ export default async function TrabajadorDetailPage({
           </CardContent>
         </Card>
 
-        {/* Recent Certificates */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -258,20 +268,25 @@ export default async function TrabajadorDetailPage({
               Constancias
             </CardTitle>
             <Link href={`/dashboard/constancias/nueva?trabajador=${id}`}>
-              <Button size="sm" variant="outline">Nueva</Button>
+              <Button size="sm" variant="outline">
+                Nueva
+              </Button>
             </Link>
           </CardHeader>
           <CardContent>
-            {certificates && certificates.length > 0 ? (
+            {certsNorm.length > 0 ? (
               <div className="space-y-3">
-                {certificates.map((cert: Certificate) => (
-                  <div key={cert.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                {certsNorm.map((cert) => (
+                  <div
+                    key={cert.id}
+                    className="flex items-center justify-between rounded-lg border border-border p-3"
+                  >
                     <div>
                       <p className="text-sm font-medium">
                         {CERTIFICATE_TYPE_LABELS[cert.certificate_type]}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(cert.issue_date).toLocaleDateString('es-MX')}
+                        {new Date(cert.issue_date as string).toLocaleDateString('es-MX')}
                       </p>
                     </div>
                     {getResultBadge(cert.result)}

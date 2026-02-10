@@ -1,28 +1,57 @@
-import { createClient } from '@/lib/supabase/server'
+import { connectDB } from '@/lib/db'
+import { MedicalRecord, Worker } from '@/lib/models'
 import { MedicalRecordsTable } from '@/components/medical-records/medical-records-table'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
 
-export default async function ExpedientesPage() {
-  const supabase = await createClient()
-  
-  const { data: records } = await supabase
-    .from('medical_records')
-    .select('*, worker:workers(id, first_name, last_name, employee_code, company:companies(name))')
-    .order('record_date', { ascending: false })
+function norm(d: { _id: unknown; [k: string]: unknown }) {
+  return { ...d, id: String(d._id) }
+}
 
-  const { data: workers } = await supabase
-    .from('workers')
-    .select('id, first_name, last_name, employee_code')
-    .eq('status', 'active')
-    .order('last_name')
+export default async function ExpedientesPage() {
+  await connectDB()
+  const [records, workers] = await Promise.all([
+    MedicalRecord.find()
+      .sort({ record_date: -1 })
+      .populate({
+        path: 'worker_id',
+        select: 'first_name last_name employee_code',
+        populate: { path: 'company_id', select: 'name' },
+      })
+      .lean(),
+    Worker.find({ status: 'active' })
+      .sort({ last_name: 1 })
+      .select('id first_name last_name employee_code')
+      .lean(),
+  ])
+
+  const recordsNorm = (records as { _id: unknown; worker_id: { _id: string; first_name: string; last_name: string; employee_code: string; company_id?: { name: string } }; [k: string]: unknown }[]).map((r) => {
+    const row = norm(r) as { id: string; worker?: { id: string; first_name: string; last_name: string; employee_code: string; company?: { name: string } }; [k: string]: unknown }
+    const w = r.worker_id
+    if (w) {
+      row.worker = {
+        id: String((w as { _id?: string })._id ?? w),
+        first_name: w.first_name,
+        last_name: w.last_name,
+        employee_code: w.employee_code,
+        company: w.company_id ? { name: w.company_id.name } : undefined,
+      }
+    }
+    return row
+  })
+
+  const workersNorm = (workers as { _id: string; first_name: string; last_name: string; employee_code: string }[]).map(
+    (w) => ({ id: String(w._id), first_name: w.first_name, last_name: w.last_name, employee_code: w.employee_code })
+  )
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Expedientes Médicos</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            Expedientes Médicos
+          </h1>
           <p className="text-muted-foreground">
             Historia clínica y antecedentes médicos de los trabajadores
           </p>
@@ -35,7 +64,7 @@ export default async function ExpedientesPage() {
         </Link>
       </div>
 
-      <MedicalRecordsTable records={records || []} workers={workers || []} />
+      <MedicalRecordsTable records={recordsNorm} workers={workersNorm} />
     </div>
   )
 }

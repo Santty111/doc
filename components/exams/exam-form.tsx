@@ -1,10 +1,8 @@
 'use client'
 
-import React from "react"
-
+import React from 'react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,6 +19,7 @@ import { Loader2, Save, ArrowLeft, Upload, X } from 'lucide-react'
 import Link from 'next/link'
 import type { MedicalExam, Worker } from '@/lib/types'
 import { EXAM_TYPES } from '@/lib/types'
+import { createMedicalExam, updateMedicalExam } from '@/lib/actions'
 
 interface ExamFormProps {
   workers: (Pick<Worker, 'id' | 'first_name' | 'last_name' | 'employee_code'> & {
@@ -30,9 +29,12 @@ interface ExamFormProps {
   defaultWorkerId?: string
 }
 
-export function ExamForm({ workers, exam, defaultWorkerId }: ExamFormProps) {
+export function ExamForm({
+  workers,
+  exam,
+  defaultWorkerId,
+}: ExamFormProps) {
   const router = useRouter()
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
@@ -40,25 +42,23 @@ export function ExamForm({ workers, exam, defaultWorkerId }: ExamFormProps) {
   const [formData, setFormData] = useState({
     worker_id: exam?.worker_id || defaultWorkerId || '',
     exam_type: exam?.exam_type || '',
-    exam_date: exam?.exam_date || new Date().toISOString().split('T')[0],
+    exam_date:
+      exam?.exam_date?.toString().split('T')[0] ||
+      new Date().toISOString().split('T')[0],
     lab_name: exam?.lab_name || '',
     results: exam?.results || '',
     observations: exam?.observations || '',
   })
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0])
-    }
+    if (e.target.files?.[0]) setFile(e.target.files[0])
   }
 
-  const removeFile = () => {
-    setFile(null)
-  }
+  const removeFile = () => setFile(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,30 +66,18 @@ export function ExamForm({ workers, exam, defaultWorkerId }: ExamFormProps) {
     setError(null)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
       let fileUrl = exam?.file_url || null
       let fileName = exam?.file_name || null
 
-      // Upload file if provided
       if (file) {
-        const fileExt = file.name.split('.').pop()
-        const filePath = `exams/${formData.worker_id}/${Date.now()}.${fileExt}`
-        
-        const { error: uploadError } = await supabase.storage
-          .from('medical-files')
-          .upload(filePath, file)
-
-        if (uploadError) {
-          // If bucket doesn't exist, just skip file upload
-          console.log('File upload skipped:', uploadError.message)
-        } else {
-          const { data: urlData } = supabase.storage
-            .from('medical-files')
-            .getPublicUrl(filePath)
-          
-          fileUrl = urlData.publicUrl
-          fileName = file.name
+        const fd = new FormData()
+        fd.append('file', file)
+        fd.append('workerId', formData.worker_id || '')
+        const res = await fetch('/api/upload', { method: 'POST', body: fd })
+        if (res.ok) {
+          const data = await res.json()
+          fileUrl = data.url
+          fileName = data.fileName
         }
       }
 
@@ -102,28 +90,20 @@ export function ExamForm({ workers, exam, defaultWorkerId }: ExamFormProps) {
         observations: formData.observations || null,
         file_url: fileUrl,
         file_name: fileName,
-        created_by: user?.id,
       }
 
       if (exam) {
-        const { error } = await supabase
-          .from('medical_exams')
-          .update(dataToSave)
-          .eq('id', exam.id)
-
-        if (error) throw error
+        await updateMedicalExam(exam.id, dataToSave)
       } else {
-        const { error } = await supabase
-          .from('medical_exams')
-          .insert(dataToSave)
-
-        if (error) throw error
+        await createMedicalExam(dataToSave)
       }
 
       router.push('/dashboard/examenes')
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || 'Error al guardar el examen')
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : 'Error al guardar el examen'
+      )
     } finally {
       setLoading(false)
     }
@@ -145,7 +125,10 @@ export function ExamForm({ workers, exam, defaultWorkerId }: ExamFormProps) {
         <CardContent className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="worker_id">Trabajador *</Label>
-            <Select value={formData.worker_id} onValueChange={(v) => handleChange('worker_id', v)}>
+            <Select
+              value={formData.worker_id}
+              onValueChange={(v) => handleChange('worker_id', v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar trabajador" />
               </SelectTrigger>
@@ -158,10 +141,12 @@ export function ExamForm({ workers, exam, defaultWorkerId }: ExamFormProps) {
               </SelectContent>
             </Select>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="exam_type">Tipo de Examen *</Label>
-            <Select value={formData.exam_type} onValueChange={(v) => handleChange('exam_type', v)}>
+            <Select
+              value={formData.exam_type}
+              onValueChange={(v) => handleChange('exam_type', v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar tipo" />
               </SelectTrigger>
@@ -174,7 +159,6 @@ export function ExamForm({ workers, exam, defaultWorkerId }: ExamFormProps) {
               </SelectContent>
             </Select>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="exam_date">Fecha del Examen *</Label>
             <Input
@@ -185,7 +169,6 @@ export function ExamForm({ workers, exam, defaultWorkerId }: ExamFormProps) {
               required
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="lab_name">Laboratorio / Clínica</Label>
             <Input
@@ -214,7 +197,6 @@ export function ExamForm({ workers, exam, defaultWorkerId }: ExamFormProps) {
               rows={4}
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="observations">Observaciones</Label>
             <Textarea
@@ -259,24 +241,23 @@ export function ExamForm({ workers, exam, defaultWorkerId }: ExamFormProps) {
                 onChange={handleFileChange}
                 className="absolute inset-0 cursor-pointer opacity-0"
               />
-              <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center hover:border-primary/50 transition-colors">
-                <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+              <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
+                <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
                 <p className="text-sm font-medium">Haga clic para seleccionar un archivo</p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="mt-1 text-xs text-muted-foreground">
                   PDF, JPG o PNG (máx. 10MB)
                 </p>
               </div>
             </div>
           )}
-
           {exam?.file_url && !file && (
             <div className="mt-4 rounded-lg bg-secondary p-4">
               <p className="text-sm text-muted-foreground">
                 Archivo actual: {exam.file_name || 'Archivo adjunto'}
               </p>
-              <a 
-                href={exam.file_url} 
-                target="_blank" 
+              <a
+                href={exam.file_url}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-primary hover:underline"
               >

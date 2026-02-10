@@ -1,10 +1,8 @@
 'use client'
 
-import React from "react"
-
+import React from 'react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +18,7 @@ import {
 import { Loader2, Save, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import type { MedicalRecord, Worker } from '@/lib/types'
+import { createMedicalRecord, updateMedicalRecord } from '@/lib/actions'
 
 interface MedicalRecordFormProps {
   workers: (Pick<Worker, 'id' | 'first_name' | 'last_name' | 'employee_code'> & {
@@ -29,15 +28,20 @@ interface MedicalRecordFormProps {
   defaultWorkerId?: string
 }
 
-export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalRecordFormProps) {
+export function MedicalRecordForm({
+  workers,
+  record,
+  defaultWorkerId,
+}: MedicalRecordFormProps) {
   const router = useRouter()
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     worker_id: record?.worker_id || defaultWorkerId || '',
-    record_date: record?.record_date || new Date().toISOString().split('T')[0],
+    record_date:
+      record?.record_date?.toString().split('T')[0] ||
+      new Date().toISOString().split('T')[0],
     medical_history: record?.medical_history || '',
     family_history: record?.family_history || '',
     allergies: record?.allergies || '',
@@ -51,7 +55,7 @@ export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalR
   })
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,8 +64,6 @@ export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalR
     setError(null)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
       const dataToSave = {
         worker_id: formData.worker_id,
         record_date: formData.record_date,
@@ -75,34 +77,25 @@ export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalR
         blood_pressure: formData.blood_pressure || null,
         heart_rate: formData.heart_rate ? parseInt(formData.heart_rate) : null,
         observations: formData.observations || null,
-        created_by: user?.id,
       }
 
       if (record) {
-        const { error } = await supabase
-          .from('medical_records')
-          .update(dataToSave)
-          .eq('id', record.id)
-
-        if (error) throw error
+        await updateMedicalRecord(record.id, dataToSave)
       } else {
-        const { error } = await supabase
-          .from('medical_records')
-          .insert(dataToSave)
-
-        if (error) throw error
+        await createMedicalRecord(dataToSave)
       }
 
       router.push('/dashboard/expedientes')
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || 'Error al guardar el expediente')
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : 'Error al guardar el expediente'
+      )
     } finally {
       setLoading(false)
     }
   }
 
-  // Calculate BMI
   const calculateBMI = () => {
     if (formData.height_cm && formData.weight_kg) {
       const heightM = parseFloat(formData.height_cm) / 100
@@ -131,7 +124,10 @@ export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalR
         <CardContent className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="worker_id">Trabajador *</Label>
-            <Select value={formData.worker_id} onValueChange={(v) => handleChange('worker_id', v)}>
+            <Select
+              value={formData.worker_id}
+              onValueChange={(v) => handleChange('worker_id', v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar trabajador" />
               </SelectTrigger>
@@ -144,7 +140,6 @@ export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalR
               </SelectContent>
             </Select>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="record_date">Fecha de Registro *</Label>
             <Input
@@ -174,7 +169,6 @@ export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalR
               rows={3}
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="family_history">Antecedentes Familiares</Label>
             <Textarea
@@ -185,7 +179,6 @@ export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalR
               rows={3}
             />
           </div>
-
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="allergies">Alergias</Label>
@@ -197,13 +190,14 @@ export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalR
                 rows={2}
               />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="current_medications">Medicamentos Actuales</Label>
               <Textarea
                 id="current_medications"
                 value={formData.current_medications}
-                onChange={(e) => handleChange('current_medications', e.target.value)}
+                onChange={(e) =>
+                  handleChange('current_medications', e.target.value)
+                }
                 placeholder="Medicamentos que toma actualmente..."
                 rows={2}
               />
@@ -220,7 +214,10 @@ export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalR
         <CardContent className="grid gap-6 md:grid-cols-3">
           <div className="space-y-2">
             <Label htmlFor="blood_type">Tipo de Sangre</Label>
-            <Select value={formData.blood_type} onValueChange={(v) => handleChange('blood_type', v)}>
+            <Select
+              value={formData.blood_type}
+              onValueChange={(v) => handleChange('blood_type', v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar" />
               </SelectTrigger>
@@ -236,7 +233,6 @@ export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalR
               </SelectContent>
             </Select>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="height_cm">Estatura (cm)</Label>
             <Input
@@ -248,7 +244,6 @@ export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalR
               placeholder="170"
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="weight_kg">Peso (kg)</Label>
             <Input
@@ -260,7 +255,6 @@ export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalR
               placeholder="70"
             />
           </div>
-
           {bmi && (
             <div className="space-y-2">
               <Label>IMC (Calculado)</Label>
@@ -269,7 +263,6 @@ export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalR
               </div>
             </div>
           )}
-
           <div className="space-y-2">
             <Label htmlFor="blood_pressure">Presión Arterial</Label>
             <Input
@@ -279,7 +272,6 @@ export function MedicalRecordForm({ workers, record, defaultWorkerId }: MedicalR
               placeholder="120/80"
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="heart_rate">Frecuencia Cardíaca (lpm)</Label>
             <Input

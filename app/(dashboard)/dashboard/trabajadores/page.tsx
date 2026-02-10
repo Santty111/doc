@@ -1,16 +1,26 @@
-import { createClient } from '@/lib/supabase/server'
+import { connectDB } from '@/lib/db'
+import { Worker } from '@/lib/models'
 import { WorkersTable } from '@/components/workers/workers-table'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
 
+function normalizeWorker(d: { _id: unknown; [k: string]: unknown }) {
+  return { ...d, id: String(d._id) }
+}
+
 export default async function TrabajadoresPage() {
-  const supabase = await createClient()
-  
-  const { data: workers, error } = await supabase
-    .from('workers')
-    .select('*, company:companies(name)')
-    .order('last_name', { ascending: true })
+  await connectDB()
+  const workers = await Worker.find()
+    .sort({ last_name: 1 })
+    .populate('company_id', 'name')
+    .lean()
+
+  const normalized = workers.map((w) => {
+    const row = normalizeWorker(w as { _id: unknown; [k: string]: unknown })
+    const c = (w as { company_id?: { name: string } }).company_id
+    return { ...row, company: c ? { name: c.name } : null }
+  })
 
   return (
     <div className="space-y-6">
@@ -29,7 +39,7 @@ export default async function TrabajadoresPage() {
         </Link>
       </div>
 
-      <WorkersTable workers={workers || []} />
+      <WorkersTable workers={normalized} />
     </div>
   )
 }
