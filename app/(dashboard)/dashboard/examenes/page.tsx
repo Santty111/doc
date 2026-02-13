@@ -4,15 +4,20 @@ import { ExamsTable } from '@/components/exams/exams-table'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
-
-function norm(d: { _id: unknown; [k: string]: unknown }) {
-  return { ...d, id: String(d._id) }
-}
+import { toStr } from '@/lib/utils'
+import { toPlainExam } from '@/lib/exams'
+import { getProfile } from '@/lib/auth-server'
 
 export default async function ExamenesPage() {
+  const profile = await getProfile()
   await connectDB()
+  const workerFilter = profile?.company_id ? { company_id: profile.company_id } : {}
+  const workerIds = profile?.company_id
+    ? await Worker.find(workerFilter).distinct('_id')
+    : null
+  const examFilter = workerIds !== null ? { worker_id: { $in: workerIds } } : {}
   const [exams, workers] = await Promise.all([
-    MedicalExam.find()
+    MedicalExam.find(examFilter)
       .sort({ exam_date: -1 })
       .populate({
         path: 'worker_id',
@@ -20,46 +25,21 @@ export default async function ExamenesPage() {
         populate: { path: 'company_id', select: 'name' },
       })
       .lean(),
-    Worker.find({ status: 'active' })
+    Worker.find({ ...workerFilter, status: 'active' })
       .sort({ last_name: 1 })
       .select('first_name last_name employee_code')
       .lean(),
   ])
 
-  const examsNorm = (
-    exams as {
-      _id: unknown
-      worker_id: {
-        _id: string
-        first_name: string
-        last_name: string
-        employee_code: string
-        company_id?: { name: string }
-      }
-      [k: string]: unknown
-    }[]
-  ).map((e) => {
-    const row = norm(e) as { id: string; worker?: { id: string; first_name: string; last_name: string; employee_code: string; company?: { name: string } }; [k: string]: unknown }
-    const w = e.worker_id
-    if (w) {
-      row.worker = {
-        id: String(w._id),
-        first_name: w.first_name,
-        last_name: w.last_name,
-        employee_code: w.employee_code,
-        company: w.company_id ? { name: w.company_id.name } : undefined,
-      }
-    }
-    return row
-  })
+  const examsNorm = (exams as Record<string, unknown>[]).map((e) =>
+    toPlainExam(e as Parameters<typeof toPlainExam>[0])
+  )
 
-  const workersNorm = (
-    workers as { _id: string; first_name: string; last_name: string; employee_code: string }[]
-  ).map((w) => ({
-    id: String(w._id),
-    first_name: w.first_name,
-    last_name: w.last_name,
-    employee_code: w.employee_code,
+  const workersNorm = (workers as Record<string, unknown>[]).map((w) => ({
+    id: toStr(w._id),
+    first_name: toStr(w.first_name),
+    last_name: toStr(w.last_name),
+    employee_code: toStr(w.employee_code),
   }))
 
   return (

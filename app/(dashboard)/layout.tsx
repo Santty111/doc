@@ -24,34 +24,49 @@ export default async function DashboardLayout({
 
   await connectDB()
   let companies = await CompanyModel.find().sort({ name: 1 }).lean()
-  if (companies.length === 0) {
-    await CompanyModel.insertMany([
-      { name: 'Ribel', code: 'RIB' },
-      { name: 'Hiltexpoy', code: 'HIL' },
-      { name: 'Interfibra', code: 'INT' },
-      { name: 'Jaltextiles', code: 'JAL' },
-    ])
-    companies = await CompanyModel.find().sort({ name: 1 }).lean()
+  const defaultCompanies = [
+    { name: 'Hiltexpoy', code: 'HIL' },
+    { name: 'Interfibra', code: 'INT' },
+    { name: 'Jaltextiles', code: 'JAL' },
+    { name: 'Ribel', code: 'RIB' },
+    { name: 'Otros', code: 'OTR' },
+  ]
+  for (const c of defaultCompanies) {
+    const exists = await CompanyModel.findOne({ name: c.name }).lean()
+    if (!exists) await CompanyModel.create(c)
   }
-  const companiesNormalized = (companies as { _id: string; name: string; code?: string }[]).map((c) => ({
-    id: c._id,
+  companies = await CompanyModel.find().sort({ name: 1 }).lean()
+  const companiesNormalized: Company[] = (companies as { _id: unknown; name: string; code?: string }[]).map((c) => ({
+    id: String(c._id),
     name: c.name,
     code: c.code ?? '',
     created_at: '',
   }))
 
+  const profilePlain: Profile & { company: Company | null } = {
+    id: profile.id,
+    email: profile.email,
+    full_name: profile.full_name,
+    role: profile.role,
+    company_id: profile.company_id,
+    created_at: profile.created_at,
+    updated_at: profile.updated_at,
+    company: profile.company,
+  }
 
   return (
     <div className="flex h-screen bg-background">
-      <DashboardSidebar
-        profile={profile as Profile & { company: Company | null }}
-        companies={companiesNormalized}
-      />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <DashboardHeader
-          profile={profile as Profile & { company: Company | null }}
+      <div className="print:hidden">
+        <DashboardSidebar
+          profile={profilePlain}
+          companies={companiesNormalized}
         />
-        <main className="flex-1 overflow-auto p-6">
+      </div>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="print:hidden">
+          <DashboardHeader profile={profilePlain} />
+        </div>
+        <main className="flex-1 overflow-auto p-6 print:p-0">
           {children}
         </main>
       </div>

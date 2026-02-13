@@ -20,6 +20,7 @@ import Link from 'next/link'
 import type { MedicalExam, Worker } from '@/lib/types'
 import { EXAM_TYPES } from '@/lib/types'
 import { createMedicalExam, updateMedicalExam } from '@/lib/actions'
+import { useUploadThing } from '@/lib/uploadthing'
 
 interface ExamFormProps {
   workers: (Pick<Worker, 'id' | 'first_name' | 'last_name' | 'employee_code'> & {
@@ -38,6 +39,17 @@ export function ExamForm({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
+
+  const { startUpload } = useUploadThing('examDocument', {
+    onUploadError: (err) => {
+      setError(err.message || 'Error al subir el archivo')
+      setLoading(false)
+    },
+  })
+
+  /** URL del archivo subido (UploadThing puede devolver .url o .ufsUrl) */
+  const getFileUrl = (f: { url?: string; ufsUrl?: string } | null) =>
+    f?.url ?? f?.ufsUrl ?? null
 
   const [formData, setFormData] = useState({
     worker_id: exam?.worker_id || defaultWorkerId || '',
@@ -60,46 +72,41 @@ export function ExamForm({
 
   const removeFile = () => setFile(null)
 
+  const saveExam = async (fileUrl: string | null, fileName: string | null) => {
+    const dataToSave = {
+      worker_id: formData.worker_id,
+      exam_type: formData.exam_type,
+      exam_date: formData.exam_date,
+      lab_name: formData.lab_name || null,
+      results: formData.results || null,
+      observations: formData.observations || null,
+      file_url: fileUrl,
+      file_name: fileName,
+    }
+    if (exam) {
+      await updateMedicalExam(exam.id, dataToSave)
+    } else {
+      await createMedicalExam(dataToSave)
+    }
+    router.push('/dashboard/examenes')
+    router.refresh()
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
 
     try {
-      let fileUrl = exam?.file_url || null
-      let fileName = exam?.file_name || null
-
       if (file) {
-        const fd = new FormData()
-        fd.append('file', file)
-        fd.append('workerId', formData.worker_id || '')
-        const res = await fetch('/api/upload', { method: 'POST', body: fd })
-        if (res.ok) {
-          const data = await res.json()
-          fileUrl = data.url
-          fileName = data.fileName
-        }
-      }
-
-      const dataToSave = {
-        worker_id: formData.worker_id,
-        exam_type: formData.exam_type,
-        exam_date: formData.exam_date,
-        lab_name: formData.lab_name || null,
-        results: formData.results || null,
-        observations: formData.observations || null,
-        file_url: fileUrl,
-        file_name: fileName,
-      }
-
-      if (exam) {
-        await updateMedicalExam(exam.id, dataToSave)
+        const res = await startUpload([file])
+        const first = res?.[0]
+        const fileUrl = getFileUrl(first ?? null)
+        const fileName = first?.name ?? null
+        await saveExam(fileUrl, fileName)
       } else {
-        await createMedicalExam(dataToSave)
+        await saveExam(exam?.file_url || null, exam?.file_name || null)
       }
-
-      router.push('/dashboard/examenes')
-      router.refresh()
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : 'Error al guardar el examen'

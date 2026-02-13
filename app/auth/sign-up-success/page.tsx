@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Heart, Mail, ArrowLeft } from 'lucide-react'
+import { Heart, CheckCircle, ArrowRight } from 'lucide-react'
 
 export default function SignUpSuccessPage() {
   return (
@@ -18,32 +18,37 @@ export default function SignUpSuccessPage() {
         <Card>
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent/10">
-              <Mail className="h-8 w-8 text-accent" />
+              <CheckCircle className="h-8 w-8 text-accent" />
             </div>
-            <CardTitle>Revise su Correo</CardTitle>
+            <CardTitle>¡Cuenta Creada Exitosamente!</CardTitle>
             <CardDescription>
-              Hemos enviado un enlace de confirmación a su correo electrónico
+              Tu cuenta ha sido registrada correctamente en el sistema
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-center text-sm text-muted-foreground">
-              Para completar su registro, haga clic en el enlace que enviamos a su correo. 
-              Si no lo encuentra, revise su carpeta de spam.
+              Ya puedes iniciar sesión con tus credenciales. Tu cuenta está lista para usar.
             </p>
             
             <div className="rounded-lg bg-secondary p-4 text-sm">
-              <p className="font-medium text-secondary-foreground">Próximos pasos:</p>
-              <ol className="mt-2 list-decimal list-inside space-y-1 text-muted-foreground">
-                <li>Confirme su correo electrónico</li>
-                <li>Inicie sesión en el sistema</li>
-                <li>Un administrador le asignará una empresa y rol</li>
-              </ol>
+              <p className="font-medium text-secondary-foreground">Información importante:</p>
+              <ul className="mt-2 list-disc list-inside space-y-1 text-muted-foreground">
+                <li>Tu cuenta ha sido creada con el rol de <strong>viewer</strong></li>
+                <li>Un administrador puede asignarte una empresa y cambiar tu rol si es necesario</li>
+                <li>Ya puedes acceder al dashboard del sistema</li>
+              </ul>
             </div>
+
+            <Link href="/dashboard">
+              <Button className="w-full">
+                Ir al Dashboard
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
 
             <Link href="/auth/login">
               <Button variant="outline" className="w-full bg-transparent">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Volver a Iniciar Sesión
+                Iniciar Sesión
               </Button>
             </Link>
           </CardContent>

@@ -6,8 +6,8 @@ import type { Company as CompanyType } from '@/lib/types'
 export default async function NuevoTrabajadorPage() {
   await connectDB()
   const companies = await Company.find().sort({ name: 1 }).lean()
-  const normalized: CompanyType[] = (companies as { _id: string; name: string; code?: string }[]).map(
-    (c) => ({ id: c._id, name: c.name, code: c.code ?? '', created_at: '' })
+  const normalized: CompanyType[] = (companies as { _id: unknown; name: string; code?: string }[]).map(
+    (c) => ({ id: String(c._id), name: c.name, code: c.code ?? '', created_at: '' })
   )
 
   return (

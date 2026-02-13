@@ -12,30 +12,43 @@ import Link from 'next/link'
 
 export default async function DashboardPage() {
   const profile = await getProfile()
-
   await connectDB()
+
+  const workerFilter = profile?.company_id ? { company_id: profile.company_id } : {}
+  const workerIds = profile?.company_id
+    ? await Worker.find(workerFilter).distinct('_id')
+    : null
+  const recordFilter = workerIds !== null ? { worker_id: { $in: workerIds } } : {}
+  const certFilter = workerIds !== null ? { worker_id: { $in: workerIds } } : {}
+  const examFilter = workerIds !== null ? { worker_id: { $in: workerIds } } : {}
 
   const [workersCount, recordsCount, certificatesCount, examsCount] =
     await Promise.all([
-      Worker.countDocuments({ status: 'active' }),
-      MedicalRecord.countDocuments(),
-      Certificate.countDocuments(),
-      MedicalExam.countDocuments(),
+      Worker.countDocuments({ ...workerFilter, status: 'active' }),
+      MedicalRecord.countDocuments(recordFilter),
+      Certificate.countDocuments(certFilter),
+      MedicalExam.countDocuments(examFilter),
     ])
 
   const thirtyDaysFromNow = new Date()
   thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
   const now = new Date()
 
+  const expiringCertFilter =
+    workerIds !== null
+      ? {
+          worker_id: { $in: workerIds },
+          expiry_date: { $gte: now, $lte: thirtyDaysFromNow },
+        }
+      : { expiry_date: { $gte: now, $lte: thirtyDaysFromNow } }
+
   const [expiringCertificates, recentWorkers] = await Promise.all([
-    Certificate.find({
-      expiry_date: { $gte: now, $lte: thirtyDaysFromNow },
-    })
+    Certificate.find(expiringCertFilter)
       .sort({ expiry_date: 1 })
       .limit(5)
       .populate('worker_id', 'first_name last_name employee_code')
       .lean(),
-    Worker.find()
+    Worker.find(workerFilter)
       .sort({ createdAt: -1 })
       .limit(5)
       .populate('company_id', 'name')

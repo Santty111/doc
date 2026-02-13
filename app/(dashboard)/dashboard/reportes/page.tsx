@@ -1,5 +1,6 @@
 import { connectDB } from '@/lib/db'
 import { Worker, Certificate, MedicalExam } from '@/lib/models'
+import { getProfile } from '@/lib/auth-server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Users,
@@ -14,12 +15,19 @@ import {
 } from 'lucide-react'
 
 export default async function ReportesPage() {
+  const profile = await getProfile()
   await connectDB()
+  const workerFilter = profile?.company_id ? { company_id: profile.company_id } : {}
+  const workerIds = profile?.company_id
+    ? await Worker.find(workerFilter).distinct('_id')
+    : null
+  const certFilter = workerIds !== null ? { worker_id: { $in: workerIds } } : {}
+  const examFilter = workerIds !== null ? { worker_id: { $in: workerIds } } : {}
 
   const [workersByStatus, certificatesByResult, examsByType] = await Promise.all([
-    Worker.find().populate('company_id', 'name').lean(),
-    Certificate.find().select('result certificate_type').lean(),
-    MedicalExam.find().select('exam_type').lean(),
+    Worker.find(workerFilter).populate('company_id', 'name').lean(),
+    Certificate.find(certFilter).select('result certificate_type').lean(),
+    MedicalExam.find(examFilter).select('exam_type').lean(),
   ])
 
   const activeWorkers =

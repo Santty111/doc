@@ -4,23 +4,53 @@ import { WorkersTable } from '@/components/workers/workers-table'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
+import { toStr, toDateStr } from '@/lib/utils'
+import { getProfile } from '@/lib/auth-server'
 
-function normalizeWorker(d: { _id: unknown; [k: string]: unknown }) {
-  return { ...d, id: String(d._id) }
+function normalizeWorker(w: Record<string, unknown> & { company_id?: { _id?: unknown; name: string } | unknown }) {
+  const company =
+    typeof w.company_id === 'object' && w.company_id !== null && 'name' in w.company_id
+      ? { name: (w.company_id as { name: string }).name }
+      : null
+
+  return {
+    id: toStr(w._id),
+    company_id:
+      typeof w.company_id === 'object' && w.company_id !== null && '_id' in w.company_id
+        ? toStr((w.company_id as { _id: unknown })._id)
+        : toStr(w.company_id),
+    employee_code: toStr(w.employee_code),
+    first_name: toStr(w.first_name),
+    last_name: toStr(w.last_name),
+    birth_date: toDateStr(w.birth_date) || null,
+    gender: w.gender || null,
+    curp: w.curp || null,
+    rfc: w.rfc || null,
+    nss: w.nss || null,
+    phone: w.phone || null,
+    email: w.email || null,
+    address: w.address || null,
+    department: w.department || null,
+    position: w.position || null,
+    hire_date: toDateStr(w.hire_date) || null,
+    status: (w.status || 'active') as 'active' | 'inactive' | 'terminated',
+    created_by: w.created_by ? toStr(w.created_by) : null,
+    created_at: toDateStr(w.createdAt) ?? toStr(w.createdAt),
+    updated_at: toDateStr(w.updatedAt) ?? toStr(w.updatedAt),
+    company,
+  }
 }
 
 export default async function TrabajadoresPage() {
+  const profile = await getProfile()
   await connectDB()
-  const workers = await Worker.find()
+  const workerFilter = profile?.company_id ? { company_id: profile.company_id } : {}
+  const workers = await Worker.find(workerFilter)
     .sort({ last_name: 1 })
     .populate('company_id', 'name')
     .lean()
 
-  const normalized = workers.map((w) => {
-    const row = normalizeWorker(w as { _id: unknown; [k: string]: unknown })
-    const c = (w as { company_id?: { name: string } }).company_id
-    return { ...row, company: c ? { name: c.name } : null }
-  })
+  const normalized = workers.map((w) => normalizeWorker(w as Record<string, unknown> & { company_id?: { _id?: unknown; name: string } | unknown }))
 
   return (
     <div className="space-y-6">
