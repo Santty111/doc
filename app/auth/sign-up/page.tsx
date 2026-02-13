@@ -1,11 +1,10 @@
 'use client'
 
-import React from "react"
-
+import React from 'react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,7 +13,6 @@ import { Heart, Loader2, Mail, Lock, User } from 'lucide-react'
 
 export default function SignUpPage() {
   const router = useRouter()
-  const supabase = createClient()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -40,24 +38,24 @@ export default function SignUpPage() {
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-            `${window.location.origin}/dashboard`,
-          data: {
-            full_name: fullName,
-            role: 'viewer',
-          },
-        },
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          full_name: fullName,
+          role: 'viewer',
+        }),
       })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Error al registrarse')
 
-      if (error) throw error
-
+      await signIn('credentials', { email, password, redirect: false })
       router.push('/auth/sign-up-success')
-    } catch (err: any) {
-      setError(err.message || 'Error al registrarse')
+      router.refresh()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al registrarse')
     } finally {
       setLoading(false)
     }

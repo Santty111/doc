@@ -1,10 +1,8 @@
 'use client'
 
-import React from "react"
-
+import React from 'react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +18,7 @@ import {
 import { Loader2, Save, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import type { Company, Worker } from '@/lib/types'
+import { createWorker, updateWorker } from '@/lib/actions'
 
 interface WorkerFormProps {
   companies: Company[]
@@ -28,7 +27,6 @@ interface WorkerFormProps {
 
 export function WorkerForm({ companies, worker }: WorkerFormProps) {
   const router = useRouter()
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -37,7 +35,7 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
     employee_code: worker?.employee_code || '',
     first_name: worker?.first_name || '',
     last_name: worker?.last_name || '',
-    birth_date: worker?.birth_date || '',
+    birth_date: worker?.birth_date?.toString().split('T')[0] || '',
     gender: worker?.gender || '',
     curp: worker?.curp || '',
     rfc: worker?.rfc || '',
@@ -47,12 +45,12 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
     address: worker?.address || '',
     department: worker?.department || '',
     position: worker?.position || '',
-    hire_date: worker?.hire_date || '',
+    hire_date: worker?.hire_date?.toString().split('T')[0] || '',
     status: worker?.status || 'active',
   })
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,35 +59,23 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
     setError(null)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
       const dataToSave = {
         ...formData,
         birth_date: formData.birth_date || null,
         hire_date: formData.hire_date || null,
         gender: formData.gender || null,
-        created_by: user?.id,
       }
 
       if (worker) {
-        const { error } = await supabase
-          .from('workers')
-          .update(dataToSave)
-          .eq('id', worker.id)
-
-        if (error) throw error
+        await updateWorker(worker.id, dataToSave)
       } else {
-        const { error } = await supabase
-          .from('workers')
-          .insert(dataToSave)
-
-        if (error) throw error
+        await createWorker(dataToSave)
       }
 
       router.push('/dashboard/trabajadores')
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || 'Error al guardar el trabajador')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al guardar el trabajador')
     } finally {
       setLoading(false)
     }
@@ -111,7 +97,10 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
         <CardContent className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="company_id">Empresa *</Label>
-            <Select value={formData.company_id} onValueChange={(v) => handleChange('company_id', v)}>
+            <Select
+              value={formData.company_id}
+              onValueChange={(v) => handleChange('company_id', v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar empresa" />
               </SelectTrigger>
@@ -124,7 +113,7 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
               </SelectContent>
             </Select>
           </div>
-
+          {/* rest of form unchanged - same as before */}
           <div className="space-y-2">
             <Label htmlFor="employee_code">Número de Empleado *</Label>
             <Input
@@ -134,7 +123,6 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
               required
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="first_name">Nombre(s) *</Label>
             <Input
@@ -144,7 +132,6 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
               required
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="last_name">Apellidos *</Label>
             <Input
@@ -154,7 +141,6 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
               required
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="birth_date">Fecha de Nacimiento</Label>
             <Input
@@ -164,10 +150,12 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
               onChange={(e) => handleChange('birth_date', e.target.value)}
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="gender">Género</Label>
-            <Select value={formData.gender} onValueChange={(v) => handleChange('gender', v)}>
+            <Select
+              value={formData.gender}
+              onValueChange={(v) => handleChange('gender', v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar" />
               </SelectTrigger>
@@ -178,27 +166,28 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
               </SelectContent>
             </Select>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="curp">CURP</Label>
             <Input
               id="curp"
               value={formData.curp}
-              onChange={(e) => handleChange('curp', e.target.value.toUpperCase())}
+              onChange={(e) =>
+                handleChange('curp', e.target.value.toUpperCase())
+              }
               maxLength={18}
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="rfc">RFC</Label>
             <Input
               id="rfc"
               value={formData.rfc}
-              onChange={(e) => handleChange('rfc', e.target.value.toUpperCase())}
+              onChange={(e) =>
+                handleChange('rfc', e.target.value.toUpperCase())
+              }
               maxLength={13}
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="nss">NSS (IMSS)</Label>
             <Input
@@ -208,7 +197,6 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
               maxLength={11}
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="phone">Teléfono</Label>
             <Input
@@ -218,7 +206,6 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
               onChange={(e) => handleChange('phone', e.target.value)}
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="email">Correo Electrónico</Label>
             <Input
@@ -228,7 +215,6 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
               onChange={(e) => handleChange('email', e.target.value)}
             />
           </div>
-
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="address">Dirección</Label>
             <Textarea
@@ -255,7 +241,6 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
               onChange={(e) => handleChange('department', e.target.value)}
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="position">Puesto</Label>
             <Input
@@ -264,7 +249,6 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
               onChange={(e) => handleChange('position', e.target.value)}
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="hire_date">Fecha de Ingreso</Label>
             <Input
@@ -274,10 +258,12 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
               onChange={(e) => handleChange('hire_date', e.target.value)}
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="status">Estado</Label>
-            <Select value={formData.status} onValueChange={(v) => handleChange('status', v)}>
+            <Select
+              value={formData.status}
+              onValueChange={(v) => handleChange('status', v)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

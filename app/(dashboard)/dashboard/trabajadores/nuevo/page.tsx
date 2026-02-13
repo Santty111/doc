@@ -1,13 +1,14 @@
-import { createClient } from '@/lib/supabase/server'
+import { connectDB } from '@/lib/db'
+import { Company } from '@/lib/models'
 import { WorkerForm } from '@/components/workers/worker-form'
+import type { Company as CompanyType } from '@/lib/types'
 
 export default async function NuevoTrabajadorPage() {
-  const supabase = await createClient()
-  
-  const { data: companies } = await supabase
-    .from('companies')
-    .select('*')
-    .order('name')
+  await connectDB()
+  const companies = await Company.find().sort({ name: 1 }).lean()
+  const normalized: CompanyType[] = (companies as { _id: unknown; name: string; code?: string }[]).map(
+    (c) => ({ id: String(c._id), name: c.name, code: c.code ?? '', created_at: '' })
+  )
 
   return (
     <div className="space-y-6">
@@ -18,7 +19,7 @@ export default async function NuevoTrabajadorPage() {
         </p>
       </div>
 
-      <WorkerForm companies={companies || []} />
+      <WorkerForm companies={normalized} />
     </div>
   )
 }

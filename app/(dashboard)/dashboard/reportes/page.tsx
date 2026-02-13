@@ -1,72 +1,92 @@
-import { createClient } from '@/lib/supabase/server'
+import { connectDB } from '@/lib/db'
+import { Worker, Certificate, MedicalExam } from '@/lib/models'
+import { getProfile } from '@/lib/auth-server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { 
-  Users, 
-  FileText, 
-  Award, 
-  TestTube, 
+import {
+  Users,
+  FileText,
+  Award,
+  TestTube,
   AlertTriangle,
   CheckCircle,
   Clock,
   XCircle,
-  Building2
+  Building2,
 } from 'lucide-react'
 
 export default async function ReportesPage() {
-  const supabase = await createClient()
-  
-  // Get workers by status
-  const { data: workersByStatus } = await supabase
-    .from('workers')
-    .select('status, company:companies(name)')
+  const profile = await getProfile()
+  await connectDB()
+  const workerFilter = profile?.company_id ? { company_id: profile.company_id } : {}
+  const workerIds = profile?.company_id
+    ? await Worker.find(workerFilter).distinct('_id')
+    : null
+  const certFilter = workerIds !== null ? { worker_id: { $in: workerIds } } : {}
+  const examFilter = workerIds !== null ? { worker_id: { $in: workerIds } } : {}
 
-  // Get certificates by result
-  const { data: certificatesByResult } = await supabase
-    .from('certificates')
-    .select('result, certificate_type')
+  const [workersByStatus, certificatesByResult, examsByType] = await Promise.all([
+    Worker.find(workerFilter).populate('company_id', 'name').lean(),
+    Certificate.find(certFilter).select('result certificate_type').lean(),
+    MedicalExam.find(examFilter).select('exam_type').lean(),
+  ])
 
-  // Get exams by type
-  const { data: examsByType } = await supabase
-    .from('medical_exams')
-    .select('exam_type')
+  const activeWorkers =
+    (workersByStatus as { status: string }[]).filter((w) => w.status === 'active')
+      .length || 0
+  const inactiveWorkers =
+    (workersByStatus as { status: string }[]).filter((w) => w.status === 'inactive')
+      .length || 0
+  const terminatedWorkers =
+    (workersByStatus as { status: string }[]).filter(
+      (w) => w.status === 'terminated'
+    ).length || 0
 
-  // Calculate stats
-  const activeWorkers = workersByStatus?.filter(w => w.status === 'active').length || 0
-  const inactiveWorkers = workersByStatus?.filter(w => w.status === 'inactive').length || 0
-  const terminatedWorkers = workersByStatus?.filter(w => w.status === 'terminated').length || 0
+  const certs = certificatesByResult as { result: string; certificate_type: string }[]
+  const aptoCerts = certs.filter((c) => c.result === 'apto').length || 0
+  const restriccionesCerts =
+    certs.filter((c) => c.result === 'apto_con_restricciones').length || 0
+  const noAptoCerts = certs.filter((c) => c.result === 'no_apto').length || 0
+  const pendienteCerts = certs.filter((c) => c.result === 'pendiente').length || 0
 
-  const aptoCerts = certificatesByResult?.filter(c => c.result === 'apto').length || 0
-  const restriccionesCerts = certificatesByResult?.filter(c => c.result === 'apto_con_restricciones').length || 0
-  const noAptoCerts = certificatesByResult?.filter(c => c.result === 'no_apto').length || 0
-  const pendienteCerts = certificatesByResult?.filter(c => c.result === 'pendiente').length || 0
+  const ingresoCerts = certs.filter((c) => c.certificate_type === 'ingreso').length || 0
+  const periodicoCerts =
+    certs.filter((c) => c.certificate_type === 'periodico').length || 0
+  const egresoCerts = certs.filter((c) => c.certificate_type === 'egreso').length || 0
 
-  const ingresoCerts = certificatesByResult?.filter(c => c.certificate_type === 'ingreso').length || 0
-  const periodicoCerts = certificatesByResult?.filter(c => c.certificate_type === 'periodico').length || 0
-  const egresoCerts = certificatesByResult?.filter(c => c.certificate_type === 'egreso').length || 0
+  const examCounts = (examsByType as { exam_type: string }[]).reduce(
+    (acc, exam) => {
+      acc[exam.exam_type] = (acc[exam.exam_type] || 0) + 1
+      return acc
+    },
+    {} as Record<string, number>
+  )
 
-  // Count exams by type
-  const examCounts = examsByType?.reduce((acc, exam) => {
-    acc[exam.exam_type] = (acc[exam.exam_type] || 0) + 1
-    return acc
-  }, {} as Record<string, number>) || {}
+  const workersWithCompany = workersByStatus as {
+    status: string
+    company_id?: { name: string }
+  }[]
+  const workersByCompany = workersWithCompany.reduce(
+    (acc, worker) => {
+      const companyName = worker.company_id?.name || 'Sin empresa'
+      acc[companyName] = (acc[companyName] || 0) + 1
+      return acc
+    },
+    {} as Record<string, number>
+  )
 
-  // Count workers by company
-  const workersByCompany = workersByStatus?.reduce((acc, worker) => {
-    const companyName = worker.company?.name || 'Sin empresa'
-    acc[companyName] = (acc[companyName] || 0) + 1
-    return acc
-  }, {} as Record<string, number>) || {}
+  const totalCerts = certs.length || 1
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Reportes y Estadísticas</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          Reportes y Estadísticas
+        </h1>
         <p className="text-muted-foreground">
           Análisis de datos del sistema de salud ocupacional
         </p>
       </div>
 
-      {/* Workers Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -98,7 +118,9 @@ export default async function ReportesPage() {
             <XCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-destructive">{terminatedWorkers}</div>
+            <div className="text-3xl font-bold text-destructive">
+              {terminatedWorkers}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -117,7 +139,6 @@ export default async function ReportesPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Certificates by Result */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -137,9 +158,11 @@ export default async function ReportesPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-32 rounded-full bg-secondary overflow-hidden">
-                    <div 
-                      className="h-full bg-accent" 
-                      style={{ width: `${(aptoCerts / (certificatesByResult?.length || 1)) * 100}%` }}
+                    <div
+                      className="h-full bg-accent"
+                      style={{
+                        width: `${(aptoCerts / totalCerts) * 100}%`,
+                      }}
                     />
                   </div>
                   <span className="font-medium w-8 text-right">{aptoCerts}</span>
@@ -152,12 +175,16 @@ export default async function ReportesPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-32 rounded-full bg-secondary overflow-hidden">
-                    <div 
-                      className="h-full bg-warning" 
-                      style={{ width: `${(restriccionesCerts / (certificatesByResult?.length || 1)) * 100}%` }}
+                    <div
+                      className="h-full bg-warning"
+                      style={{
+                        width: `${(restriccionesCerts / totalCerts) * 100}%`,
+                      }}
                     />
                   </div>
-                  <span className="font-medium w-8 text-right">{restriccionesCerts}</span>
+                  <span className="font-medium w-8 text-right">
+                    {restriccionesCerts}
+                  </span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -167,9 +194,11 @@ export default async function ReportesPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-32 rounded-full bg-secondary overflow-hidden">
-                    <div 
-                      className="h-full bg-destructive" 
-                      style={{ width: `${(noAptoCerts / (certificatesByResult?.length || 1)) * 100}%` }}
+                    <div
+                      className="h-full bg-destructive"
+                      style={{
+                        width: `${(noAptoCerts / totalCerts) * 100}%`,
+                      }}
                     />
                   </div>
                   <span className="font-medium w-8 text-right">{noAptoCerts}</span>
@@ -182,19 +211,22 @@ export default async function ReportesPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-32 rounded-full bg-secondary overflow-hidden">
-                    <div 
-                      className="h-full bg-muted-foreground" 
-                      style={{ width: `${(pendienteCerts / (certificatesByResult?.length || 1)) * 100}%` }}
+                    <div
+                      className="h-full bg-muted-foreground"
+                      style={{
+                        width: `${(pendienteCerts / totalCerts) * 100}%`,
+                      }}
                     />
                   </div>
-                  <span className="font-medium w-8 text-right">{pendienteCerts}</span>
+                  <span className="font-medium w-8 text-right">
+                    {pendienteCerts}
+                  </span>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Certificates by Type */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -223,7 +255,6 @@ export default async function ReportesPage() {
           </CardContent>
         </Card>
 
-        {/* Workers by Company */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -237,7 +268,10 @@ export default async function ReportesPage() {
           <CardContent>
             <div className="space-y-3">
               {Object.entries(workersByCompany).map(([company, count]) => (
-                <div key={company} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                <div
+                  key={company}
+                  className="flex items-center justify-between p-3 rounded-lg border border-border"
+                >
                   <span className="font-medium">{company}</span>
                   <span className="text-xl font-bold text-chart-2">{count}</span>
                 </div>
@@ -251,7 +285,6 @@ export default async function ReportesPage() {
           </CardContent>
         </Card>
 
-        {/* Exams by Type */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -265,10 +298,13 @@ export default async function ReportesPage() {
           <CardContent>
             <div className="space-y-2">
               {Object.entries(examCounts)
-                .sort(([,a], [,b]) => b - a)
+                .sort(([, a], [, b]) => b - a)
                 .slice(0, 6)
                 .map(([type, count]) => (
-                  <div key={type} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <div
+                    key={type}
+                    className="flex items-center justify-between py-2 border-b border-border last:border-0"
+                  >
                     <span className="text-sm">{type}</span>
                     <span className="font-medium">{count}</span>
                   </div>

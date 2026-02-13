@@ -1,10 +1,8 @@
 'use client'
 
-import React from "react"
-
+import React from 'react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +18,7 @@ import {
 import { Loader2, Save, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import type { Certificate, Worker } from '@/lib/types'
+import { createCertificate, updateCertificate } from '@/lib/actions'
 
 interface CertificateFormProps {
   workers: (Pick<Worker, 'id' | 'first_name' | 'last_name' | 'employee_code'> & {
@@ -30,17 +29,23 @@ interface CertificateFormProps {
   doctorName?: string
 }
 
-export function CertificateForm({ workers, certificate, defaultWorkerId, doctorName }: CertificateFormProps) {
+export function CertificateForm({
+  workers,
+  certificate,
+  defaultWorkerId,
+  doctorName,
+}: CertificateFormProps) {
   const router = useRouter()
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     worker_id: certificate?.worker_id || defaultWorkerId || '',
     certificate_type: certificate?.certificate_type || 'ingreso',
-    issue_date: certificate?.issue_date || new Date().toISOString().split('T')[0],
-    expiry_date: certificate?.expiry_date || '',
+    issue_date:
+      certificate?.issue_date?.toString().split('T')[0] ||
+      new Date().toISOString().split('T')[0],
+    expiry_date: certificate?.expiry_date?.toString().split('T')[0] || '',
     result: certificate?.result || 'pendiente',
     restrictions: certificate?.restrictions || '',
     recommendations: certificate?.recommendations || '',
@@ -50,7 +55,7 @@ export function CertificateForm({ workers, certificate, defaultWorkerId, doctorN
   })
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,39 +64,28 @@ export function CertificateForm({ workers, certificate, defaultWorkerId, doctorN
     setError(null)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
       const dataToSave = {
         ...formData,
         expiry_date: formData.expiry_date || null,
-        created_by: user?.id,
       }
 
       if (certificate) {
-        const { error } = await supabase
-          .from('certificates')
-          .update(dataToSave)
-          .eq('id', certificate.id)
-
-        if (error) throw error
+        await updateCertificate(certificate.id, dataToSave)
       } else {
-        const { error } = await supabase
-          .from('certificates')
-          .insert(dataToSave)
-
-        if (error) throw error
+        await createCertificate(dataToSave)
       }
 
       router.push('/dashboard/constancias')
       router.refresh()
-    } catch (err: any) {
-      setError(err.message || 'Error al guardar la constancia')
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : 'Error al guardar la constancia'
+      )
     } finally {
       setLoading(false)
     }
   }
 
-  // Calculate default expiry date (1 year from issue date)
   const setDefaultExpiry = () => {
     if (formData.issue_date) {
       const date = new Date(formData.issue_date)
@@ -116,14 +110,18 @@ export function CertificateForm({ workers, certificate, defaultWorkerId, doctorN
         <CardContent>
           <div className="space-y-2">
             <Label htmlFor="worker_id">Trabajador *</Label>
-            <Select value={formData.worker_id} onValueChange={(v) => handleChange('worker_id', v)}>
+            <Select
+              value={formData.worker_id}
+              onValueChange={(v) => handleChange('worker_id', v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar trabajador" />
               </SelectTrigger>
               <SelectContent>
                 {workers.map((worker) => (
                   <SelectItem key={worker.id} value={worker.id}>
-                    {worker.first_name} {worker.last_name} ({worker.employee_code}) - {worker.company?.name}
+                    {worker.first_name} {worker.last_name} ({worker.employee_code}) -{' '}
+                    {worker.company?.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -140,7 +138,10 @@ export function CertificateForm({ workers, certificate, defaultWorkerId, doctorN
         <CardContent className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="certificate_type">Tipo de Examen *</Label>
-            <Select value={formData.certificate_type} onValueChange={(v) => handleChange('certificate_type', v)}>
+            <Select
+              value={formData.certificate_type}
+              onValueChange={(v) => handleChange('certificate_type', v)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -152,22 +153,25 @@ export function CertificateForm({ workers, certificate, defaultWorkerId, doctorN
               </SelectContent>
             </Select>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="result">Resultado *</Label>
-            <Select value={formData.result} onValueChange={(v) => handleChange('result', v)}>
+            <Select
+              value={formData.result}
+              onValueChange={(v) => handleChange('result', v)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="apto">Apto</SelectItem>
-                <SelectItem value="apto_con_restricciones">Apto con Restricciones</SelectItem>
+                <SelectItem value="apto_con_restricciones">
+                  Apto con Restricciones
+                </SelectItem>
                 <SelectItem value="no_apto">No Apto</SelectItem>
                 <SelectItem value="pendiente">Pendiente</SelectItem>
               </SelectContent>
             </Select>
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="issue_date">Fecha de Emisión *</Label>
             <Input
@@ -178,7 +182,6 @@ export function CertificateForm({ workers, certificate, defaultWorkerId, doctorN
               required
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="expiry_date">Fecha de Vigencia</Label>
             <div className="flex gap-2">
@@ -193,7 +196,6 @@ export function CertificateForm({ workers, certificate, defaultWorkerId, doctorN
               </Button>
             </div>
           </div>
-
           {formData.result === 'apto_con_restricciones' && (
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor="restrictions">Restricciones</Label>
@@ -206,7 +208,6 @@ export function CertificateForm({ workers, certificate, defaultWorkerId, doctorN
               />
             </div>
           )}
-
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="recommendations">Recomendaciones</Label>
             <Textarea
@@ -217,7 +218,6 @@ export function CertificateForm({ workers, certificate, defaultWorkerId, doctorN
               rows={3}
             />
           </div>
-
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="observations">Observaciones</Label>
             <Textarea
@@ -245,7 +245,6 @@ export function CertificateForm({ workers, certificate, defaultWorkerId, doctorN
               onChange={(e) => handleChange('doctor_name', e.target.value)}
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="doctor_license">Cédula Profesional</Label>
             <Input
