@@ -127,3 +127,147 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Formato Ministerio: impresión pixel-perfect A4, sin nav/sidebar */
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .ministerio-print,
+  .ministerio-print *,
+  .evaluacion-print,
+  .evaluacion-print * {
+    visibility: visible;
+  }
+  .ministerio-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    background: white;
+    font-size: 9pt;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+.ministerio-print {
+  font-size: 9pt;
+  line-height: 1.2;
+  color: #000;
+}
+.ministerio-print .m-cell {
+  border: 1px solid #000;
+  padding: 2px 4px;
+}
+.ministerio-print .m-label {
+  font-weight: 600;
+  background: #f5f5f5;
+}
+.ministerio-print .m-grid {
+  display: grid;
+  border: 1px solid #000;
+}
+.ministerio-print table.m-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+}
+.ministerio-print table.m-table th,
+.ministerio-print table.m-table td {
+  border: 1px solid #000;
+  padding: 2px 4px;
+  text-align: left;
+}
+.ministerio-print table.m-table th {
+  background: #f0f0f0;
+  font-weight: 600;
+}
+.ministerio-print .m-page {
+  page-break-after: always;
+}
+.ministerio-print .m-page:last-child {
+  page-break-after: auto;
+}
+
+/* Evaluación médica (wizard + certificado oficial): A4, 0.5cm, fuente condensada */
+@page evaluacion {
+  size: A4;
+  margin: 0.5cm;
+}
+
+.evaluacion-print {
+  font-family: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
+  font-size: 9pt;
+  line-height: 1.2;
+  color: #000;
+}
+.evaluacion-print table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 9pt;
+}
+.evaluacion-print th,
+.evaluacion-print td {
+  border: 1px solid #000;
+  padding: 2px 4px;
+}
+.evaluacion-print th {
+  background: #e8e8e8;
+  font-weight: 700;
+}
+.evaluacion-print .seccion-header {
+  background: #bccbef;
+  color: #000;
+  font-weight: 700;
+  padding: 4px 6px;
+  border: 1px solid #000;
+}
+
+/* Ficha Paso 1: estilo plano para impresión, sin placeholders visibles */
+.evaluacion-print.ficha-paso1 input,
+.evaluacion-print.ficha-paso1 select {
+  border-radius: 0;
+  box-shadow: none;
+}
+.evaluacion-print.ficha-paso1 input::placeholder {
+  color: transparent;
+}
+@media print {
+  .evaluacion-print.ficha-paso1 {
+    font-size: 9pt;
+  }
+}
+
+/* En pantalla: mostrar inputs; en impresión: mostrar solo valor (span) */
+.screen-only {
+  display: block;
+}
+.print-only {
+  display: none;
+}
+@media print {
+  .evaluacion-print .screen-only {
+    display: none !important;
+  }
+  .evaluacion-print .print-only {
+    display: inline !important;
+  }
+  .evaluacion-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    background: #fff;
+  }
+}

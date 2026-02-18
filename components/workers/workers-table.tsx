@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Table,
   TableBody,
@@ -28,6 +28,10 @@ interface WorkersTableProps {
 
 export function WorkersTable({ workers }: WorkersTableProps) {
   const [search, setSearch] = useState('')
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const filteredWorkers = workers.filter((worker) => {
     const searchLower = search.toLowerCase()
@@ -116,6 +120,7 @@ export function WorkersTable({ workers }: WorkersTableProps) {
                   <TableCell>{worker.position || '-'}</TableCell>
                   <TableCell>{getStatusBadge(worker.status)}</TableCell>
                   <TableCell>
+                    {mounted ? (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -149,6 +154,11 @@ export function WorkersTable({ workers }: WorkersTableProps) {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    ) : (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-hidden>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

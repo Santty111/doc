@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Table,
   TableBody,
@@ -44,6 +44,10 @@ interface MedicalRecordsTableProps {
 export function MedicalRecordsTable({ records, workers }: MedicalRecordsTableProps) {
   const [search, setSearch] = useState('')
   const [selectedWorker, setSelectedWorker] = useState<string>('')
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const filteredRecords = records.filter((record) => {
     const searchLower = search.toLowerCase()
@@ -133,6 +137,7 @@ export function MedicalRecordsTable({ records, workers }: MedicalRecordsTablePro
                     </span>
                   </TableCell>
                   <TableCell>
+                    {mounted ? (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -160,6 +165,11 @@ export function MedicalRecordsTable({ records, workers }: MedicalRecordsTablePro
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    ) : (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-hidden>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

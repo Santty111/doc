@@ -21,6 +21,8 @@ const workerSchema = new mongoose.Schema(
     department: { type: String, default: null },
     position: { type: String, default: null },
     hire_date: { type: Date, default: null },
+    blood_type: { type: String, default: null },
+    lateralidad: { type: String, enum: ['derecho', 'izquierdo', 'ambidiestro'], default: null },
     status: {
       type: String,
       enum: ['active', 'inactive', 'terminated'],

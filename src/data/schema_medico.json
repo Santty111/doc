@@ -1,0 +1,420 @@
+{
+    "sistema_medico_ocupacional_unificado": {
+      "ficha_medica_MSP": {
+        "metadata": {
+          "version": "2025",
+          "normativa": "Ministerio de Trabajo / MSP Ecuador",
+          "descripcion": "Estructura unificada de Evaluación Médica Ocupacional y Certificado"
+        },
+        "pagina_1_identificacion_y_examen": {
+          "seccion_A_establecimiento_usuario": {
+            "empresa": {
+              "institucion_del_sistema": "string",
+              "ruc": "string",
+              "ciiu": "string",
+              "establecimiento_salud": "string",
+              "numero_historia_clinica": "string",
+              "numero_archivo": "string"
+            },
+            "trabajador": {
+              "apellidos": "string",
+              "nombres": "string",
+              "sexo": [
+                "M",
+                "F"
+              ],
+              "puesto_trabajo_cargo": "string",
+              "area_departamento": "string"
+            },
+            "atencion_prioritaria": {
+              "embarazada": "boolean",
+              "persona_con_discapacidad": "boolean",
+              "enfermedad_catastrofica": "boolean",
+              "lactancia": "boolean",
+              "adulto_mayor": "boolean"
+            },
+            "datos_biograficos": {
+              "fecha_nacimiento": "date",
+              "edad": "number",
+              "grupo_sanguineo": "string",
+              "lateralidad": [
+                "Diestro",
+                "Zurdo",
+                "Ambidiestro"
+              ]
+            }
+          },
+          "seccion_B_motivo_consulta": {
+            "puesto_trabajo_ciuo": "string",
+            "fecha_atencion": "date",
+            "fecha_ingreso_trabajo": "date",
+            "fecha_reintegro": "date",
+            "fecha_ultimo_dia_laboral_salida": "date",
+            "tipo_evaluacion_check": {
+              "ingreso": "boolean",
+              "periodico": "boolean",
+              "reintegro": "boolean",
+              "retiro": "boolean"
+            },
+            "observacion": "string"
+          },
+          "seccion_C_antecedentes_personales": {
+            "antecedentes_clinicos_quirurgicos": "string",
+            "antecedentes_familiares": "string",
+            "transfusiones_autoriza": "si | no",
+            "transfusiones_observacion": "string",
+            "tratamiento_hormonal": "si | no | no_responde",
+            "tratamiento_hormonal_cual": "string",
+            "gineco_obstetricos": {
+              "fecha_ultima_menstruacion": "date",
+              "gestas": "number",
+              "partos": "number",
+              "cesareas": "number",
+              "abortos": "number",
+              "metodo_planificacion": "si | no | no_responde",
+              "metodo_planificacion_cual": "string"
+            },
+            "examenes_realizados_cual": "string",
+            "examenes_realizados_tiempo_anos": "number",
+            "registro_resultado_autorizacion_titular": "string",
+            "reproductivos_masculinos_examenes_cual": "string",
+            "reproductivos_masculinos_tiempo_anos": "number",
+            "reproductivos_masculinos_metodo_planificacion": "si | no | no_responde",
+            "reproductivos_masculinos_metodo_cual": "string",
+            "consumo_tabaco_tiempo": "string",
+            "consumo_tabaco_ex_consumidor": "boolean",
+            "consumo_tabaco_abstinencia": "string",
+            "consumo_tabaco_no_consume": "boolean",
+            "consumo_alcohol_tiempo": "string",
+            "consumo_alcohol_ex_consumidor": "boolean",
+            "consumo_alcohol_abstinencia": "string",
+            "consumo_alcohol_no_consume": "boolean",
+            "consumo_otras_cual": "string",
+            "consumo_otras_tiempo": "string",
+            "consumo_otras_ex_consumidor": "boolean",
+            "consumo_otras_abstinencia": "string",
+            "consumo_otras_no_consume": "boolean",
+            "actividad_fisica_cual": "string",
+            "actividad_fisica_tiempo": "string",
+            "medicacion_habitual": "string",
+            "condicion_preexistente_cual": "string",
+            "condicion_preexistente_cantidad": "string",
+            "observacion": "string"
+          },
+          "seccion_revision_organos_sistemas": {
+            "nota": "Marcar: (N) Normal, (A) Anormal. Describir hallazgos.",
+            "estructura_item": {
+              "estado": [
+                "Normal",
+                "Anormal"
+              ],
+              "observacion": "string"
+            },
+            "items": {
+              "piel_y_faneras": [
+                "Estado General",
+                "Cicatrices",
+                "Tatuajes"
+              ],
+              "2_ojos": [
+                "Parpados",
+                "Conjuntivas",
+                "Pupilas",
+                "Cornea",
+                "Motilidad"
+              ],
+              "3_oidos": [
+                "Pabellon",
+                "Conducto Auditivo",
+                "Timpanos"
+              ],
+              "4_oro_faringe": [
+                "Labios",
+                "Lengua",
+                "Faringe",
+                "Amigdalas",
+                "Dentadura"
+              ],
+              "senos_paranasales": [
+                "Estado"
+              ],
+              "6_cuello": [
+                "Tiroides/Masas",
+                "Movilidad"
+              ],
+              "7_torax": [
+                "Mamas",
+                "Parrilla Costal"
+              ],
+              "pulmones": [
+                "Campos Pulmonares"
+              ],
+              "corazon": [
+                "Ruidos Cardiacos"
+              ],
+              "9_abdomen": [
+                "Visceras",
+                "Pared Abdominal"
+              ],
+              "genitales": [
+                "Estado (si aplica)"
+              ],
+              "10_columna": [
+                "Flexibilidad",
+                "Desviacion",
+                "Dolor"
+              ],
+              "12_extremidades": [
+                "Vascular",
+                "Miembros Superiores",
+                "Miembros Inferiores"
+              ],
+              "13_neurologico": [
+                "Fuerza",
+                "Sensibilidad",
+                "Marcha",
+                "Reflejos"
+              ]
+            }
+          },
+          "signos_vitales_y_antropometria": {
+            "presion_arterial": "string",
+            "frecuencia_cardiaca": "number",
+            "frecuencia_respiratoria": "number",
+            "temperatura": "number",
+            "peso_kg": "number",
+            "talla_cm": "number",
+            "indice_masa_corporal": "number"
+          }
+        },
+        "pagina_2_riesgos_laborales": {
+          "seccion_G_factores_riesgo": {
+            "descripcion": "Matriz de exposición laboral actual. Nivel de riesgo 1-7 o Tiempo exposición.",
+            "categorias": {
+              "fisico": [
+                "Temperaturas altas",
+                "Temperaturas bajas",
+                "Radiacion Ionizante",
+                "Radiacion No Ionizante",
+                "Ruido",
+                "Vibracion",
+                "Iluminacion",
+                "Ventilacion",
+                "Fluido electrico"
+              ],
+              "seguridad_mecanicos": [
+                "Locativos (Senalizacion, aseo, desorden)",
+                "Atrapamiento (Maquinas/Superficies)",
+                "Atrapamiento (Objetos)",
+                "Caida de objetos",
+                "Caidas al mismo nivel",
+                "Caidas a diferente nivel",
+                "Pinchazos",
+                "Cortes",
+                "Choques/Colision vehicular",
+                "Atropellamientos",
+                "Proyeccion de fluidos",
+                "Proyeccion de particulas"
+              ],
+              "quimico": [
+                "Polvos",
+                "Solidos",
+                "Humos",
+                "Liquidos",
+                "Vapores",
+                "Aerosoles",
+                "Neblinas",
+                "Gaseosos"
+              ],
+              "biologico": [
+                "Virus",
+                "Hongos",
+                "Bacterias",
+                "Parasitos",
+                "Exposicion a vectores",
+                "Animales selvaticos"
+              ],
+              "ergonomico": [
+                "Manejo manual de cargas",
+                "Movimientos repetitivos",
+                "Posturas forzadas",
+                "Trabajos con PVD",
+                "Diseno inadecuado puesto"
+              ],
+              "psicosocial": [
+                "Monotonia",
+                "Sobrecarga laboral",
+                "Minuciosidad",
+                "Alta responsabilidad",
+                "Autonomia decisiones",
+                "Supervision deficiente",
+                "Conflicto de rol",
+                "Turnos rotativos",
+                "Relaciones interpersonales"
+              ]
+            }
+          }
+        },
+        "pagina_3_historia_y_diagnostico": {
+          "seccion_H_actividad_laboral": {
+            "tabla_antecedentes": [
+              {
+                "empresa_centro_trabajo": "string",
+                "actividades_desempenadas": "string",
+                "tipo": [
+                  "Anterior",
+                  "Actual"
+                ],
+                "tiempo_trabajo": "string",
+                "riesgos": "string"
+              }
+            ],
+            "tabla_accidentes_enfermedades": [
+              {
+                "tipo": [
+                  "Incidente",
+                  "Accidente",
+                  "Enfermedad Profesional"
+                ],
+                "calificado_IESS": "boolean",
+                "fecha": "date",
+                "especificar_diagnostico": "string",
+                "observaciones": "string"
+              }
+            ]
+          },
+          "seccion_J_diagnostico": {
+            "tabla_diagnosticos": [
+              {
+                "descripcion_diagnostica": "string",
+                "CIE_10": "string",
+                "estado": [
+                  "Presuntivo",
+                  "Definitivo"
+                ]
+              }
+            ]
+          },
+          "seccion_N_retiro": {
+            "se_realiza_evaluacion": "boolean",
+            "condicion_salud_relacionada_trabajo": "boolean",
+            "observacion_retiro": "string"
+          },
+          "seccion_firmas_ficha": {
+            "profesional": {
+              "nombre": "string",
+              "codigo": "string",
+              "firma_url": "string"
+            },
+            "trabajador": {
+              "nombre": "string",
+              "cedula": "string",
+              "firma_url": "string"
+            }
+          }
+        },
+        "pagina_4_certificado": {
+          "tipo_evaluacion": [
+            "Ingreso",
+            "Periodico",
+            "Reintegro",
+            "Retiro"
+          ],
+          "concepto_aptitud": {
+            "seleccion": [
+              "Apto",
+              "Apto en Observacion",
+              "Apto con Limitaciones",
+              "No Apto"
+            ],
+            "detalle_observaciones": "string"
+          },
+          "recomendaciones": {
+            "descripcion": "string (Texto libre para hábitos, EPPs, etc.)",
+            "observaciones_adicionales": "string"
+          },
+          "declaracion_legal": "Texto estático: Con este documento certifico que el trabajador se ha sometido...",
+          "firmas_certificado": {
+            "profesional": {
+              "nombre": "string",
+              "codigo": "string",
+              "firma_url": "string"
+            },
+            "usuario": {
+              "nombre": "string",
+              "cedula": "string",
+              "firma_url": "string"
+            }
+          }
+        }
+      },
+      "certificado_aptitud_oficial": {
+        "descripcion_archivo": "Basado estrictamente en Certificado de Aptitud.xlsx",
+        "estructura_visual": {
+          "seccion_A_datos_establecimiento_usuario": {
+            "empresa": {
+              "institucion_sistema": "string",
+              "ruc": "string",
+              "ciiu": "string",
+              "establecimiento_salud": "string",
+              "numero_historia_clinica": "string",
+              "numero_archivo": "string"
+            },
+            "usuario": {
+              "primer_apellido": "string",
+              "segundo_apellido": "string",
+              "primer_nombre": "string",
+              "segundo_nombre": "string",
+              "sexo": [
+                "M",
+                "F"
+              ],
+              "cargo_ocupacion": "string"
+            }
+          },
+          "seccion_B_datos_generales": {
+            "fecha_emision": {
+              "aaaa": "number",
+              "mm": "number",
+              "dd": "number"
+            },
+            "tipo_evaluacion_check": {
+              "ingreso": "boolean",
+              "periodico": "boolean",
+              "reintegro": "boolean",
+              "salida": "boolean"
+            }
+          },
+          "seccion_C_concepto_aptitud": {
+            "titulo": "CONCEPTO PARA APTITUD LABORAL",
+            "subtitulo": "Después de la valoración médica ocupacional se certifica que la persona en mención, es calificada como:",
+            "opciones": [
+              "Apto",
+              "Apto en Observación",
+              "Apto con Limitaciones",
+              "No Apto"
+            ],
+            "detalle_observaciones": "string (Espacio para escribir detalles si aplica)"
+          },
+          "seccion_E_recomendaciones": {
+            "titulo": "RECOMENDACIONES",
+            "campo_texto_abierto": "string (Debe permitir texto largo y saltos de línea)",
+            "ejemplos_placeholder": "Hacer ejercicio, dieta equilibrada, pausas activas, uso de EPPs..."
+          },
+          "textos_legales_obligatorios": {
+            "nota_1": "Con este documento certifico que el trabajador se ha sometido a la evaluación médica requerida para (el ingreso /la ejecución/ el reintegro y retiro) al puesto laboral y se ha informado sobre los riesgos relacionados con el trabajo emitiendo recomendaciones relacionadas con su estado de salud.",
+            "nota_2": "La presente certificación se expide con base en la historia ocupacional del usuario (a), la cual tiene carácter de confidencial."
+          },
+          "seccion_F_datos_profesional": {
+            "nombre_y_apellido": "string",
+            "codigo": "string",
+            "firma": "string (url o base64)"
+          },
+          "seccion_G_firma_usuario": {
+            "etiqueta": "FIRMA DEL USUARIO",
+            "firma": "string (url o base64)"
+          }
+        }
+      }
+    }
+  }

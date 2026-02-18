@@ -3,7 +3,7 @@ import { Certificate as CertificateModel } from '@/lib/models'
 import { notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Award, User, ArrowLeft, Edit } from 'lucide-react'
+import { Award, User, ArrowLeft, Edit, FileText } from 'lucide-react'
 import Link from 'next/link'
 import { toStr, toDateStr } from '@/lib/utils'
 import { CERTIFICATE_TYPE_LABELS, CERTIFICATE_RESULT_LABELS } from '@/lib/types'
@@ -72,12 +72,20 @@ export default async function ConstanciaDetailPage({
             </p>
           </div>
         </div>
-        <Link href={`/dashboard/constancias/${id}/editar`}>
-          <Button variant="outline">
-            <Edit className="mr-2 h-4 w-4" />
-            Editar
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href={`/dashboard/constancias/${id}/certificado-ministerio`}>
+            <Button variant="outline">
+              <FileText className="mr-2 h-4 w-4" />
+              Formato Ministerio
+            </Button>
+          </Link>
+          <Link href={`/dashboard/constancias/${id}/editar`}>
+            <Button variant="outline">
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

@@ -70,12 +70,20 @@ export default async function ExpedienteDetailPage({
             </p>
           </div>
         </div>
-        <Link href={`/dashboard/expedientes/${id}/editar`}>
-          <Button variant="outline">
-            <Edit className="mr-2 h-4 w-4" />
-            Editar
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href={`/dashboard/expedientes/${id}/ficha-ministerio`}>
+            <Button variant="outline">
+              <FileText className="mr-2 h-4 w-4" />
+              Formato Ministerio
+            </Button>
+          </Link>
+          <Link href={`/dashboard/expedientes/${id}/editar`}>
+            <Button variant="outline">
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

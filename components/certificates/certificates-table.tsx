@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Table,
   TableBody,
@@ -48,6 +48,10 @@ export function CertificatesTable({ certificates, workers }: CertificatesTablePr
   const [selectedWorker, setSelectedWorker] = useState<string>('')
   const [selectedType, setSelectedType] = useState<string>('')
   const [selectedResult, setSelectedResult] = useState<string>('')
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const filteredCertificates = certificates.filter((cert) => {
     const searchLower = search.toLowerCase()
@@ -197,6 +201,7 @@ export function CertificatesTable({ certificates, workers }: CertificatesTablePr
                     {cert.doctor_name || '-'}
                   </TableCell>
                   <TableCell>
+                    {mounted ? (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -230,6 +235,11 @@ export function CertificatesTable({ certificates, workers }: CertificatesTablePr
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    ) : (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-hidden>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

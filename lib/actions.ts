@@ -9,6 +9,7 @@ import {
   MedicalRecord,
   Certificate,
   MedicalExam,
+  MinistryFormData,
 } from '@/lib/models'
 
 async function getUserId() {
@@ -123,4 +124,42 @@ export async function updateMedicalExam(
   await MedicalExam.findByIdAndUpdate(id, formData)
   revalidatePath('/dashboard/examenes')
   revalidatePath('/dashboard')
+}
+
+export async function getMinistryFormDataByWorker(workerId: string) {
+  await connectDB()
+  const doc = await MinistryFormData.findOne({ worker_id: workerId }).sort({ updatedAt: -1 }).lean()
+  return doc ? JSON.parse(JSON.stringify(doc)) : null
+}
+
+export async function getMinistryFormDataByCertificate(certificateId: string) {
+  await connectDB()
+  const doc = await MinistryFormData.findOne({ certificate_id: certificateId }).lean()
+  return doc ? JSON.parse(JSON.stringify(doc)) : null
+}
+
+export async function getMinistryFormDataByMedicalRecord(medicalRecordId: string) {
+  await connectDB()
+  const doc = await MinistryFormData.findOne({ medical_record_id: medicalRecordId }).lean()
+  return doc ? JSON.parse(JSON.stringify(doc)) : null
+}
+
+export async function saveMinistryFormData(formData: Record<string, unknown>) {
+  const userId = await getUserId()
+  if (!userId) throw new Error('No autorizado')
+  await connectDB()
+  const id = (formData.id ?? formData._id) as string | undefined
+  const payload = { ...formData }
+  delete payload.id
+  delete payload._id
+  if (id) {
+    await MinistryFormData.findByIdAndUpdate(id, { ...payload, updatedAt: new Date() })
+    revalidatePath('/dashboard/expedientes')
+    revalidatePath('/dashboard/constancias')
+    return id
+  }
+  const created = await MinistryFormData.create({ ...payload, created_by: userId })
+  revalidatePath('/dashboard/expedientes')
+  revalidatePath('/dashboard/constancias')
+  return String(created._id)
 }

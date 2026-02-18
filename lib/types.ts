@@ -3,6 +3,10 @@ export interface Company {
   name: string
   code: string
   created_at: string
+  razon_social?: string | null
+  ruc?: string | null
+  ciiu?: string | null
+  establecimiento?: string | null
 }
 
 export interface Profile {
@@ -33,6 +37,8 @@ export interface Worker {
   department: string | null
   position: string | null
   hire_date: string | null
+  blood_type?: string | null
+  lateralidad?: 'derecho' | 'izquierdo' | 'ambidiestro' | null
   status: 'active' | 'inactive' | 'terminated'
   created_at: string
   updated_at: string
@@ -129,3 +135,67 @@ export const EXAM_TYPES = [
   'Prueba de Drogas',
   'Otro'
 ] as const
+
+// Formato Ministerio: Revisión por sistemas
+export type RevisionSistema = { estado: 'normal' | 'anormal'; observacion: string }
+export type AntecedenteLaboral = { empresa: string; puesto: string; tiempo: string; riesgos: string }
+export type AccidenteEnfermedad = { tipo: string; fecha: string; observaciones: string }
+export type ConceptoAptitud = 'apto' | 'apto_observacion' | 'apto_limitaciones' | 'no_apto'
+
+export interface MinistryFormData {
+  id: string
+  worker_id: string
+  medical_record_id: string | null
+  certificate_id: string | null
+  empresa_razon_social: string
+  empresa_ruc: string
+  empresa_ciiu: string
+  empresa_establecimiento: string
+  nro_historia_clinica: string
+  nro_archivo: string
+  usuario_apellidos: string
+  usuario_nombres: string
+  usuario_sexo: string
+  usuario_cargo: string
+  usuario_grupo_sanguineo: string
+  usuario_fecha_nacimiento: string | null
+  usuario_edad: number | null
+  usuario_lateralidad: string
+  grupos_prioritarios_embarazo: boolean
+  grupos_prioritarios_discapacidad: boolean
+  grupos_prioritarios_catastrofica: boolean
+  grupos_prioritarios_lactancia: boolean
+  grupos_prioritarios_adulto_mayor: boolean
+  revision_ojos: RevisionSistema
+  revision_oidos: RevisionSistema
+  revision_oro_faringe: RevisionSistema
+  revision_cuello: RevisionSistema
+  revision_torax: RevisionSistema
+  revision_abdomen: RevisionSistema
+  revision_columna: RevisionSistema
+  revision_extremidades: RevisionSistema
+  revision_neurologico: RevisionSistema
+  riesgo_fisicos: string
+  riesgo_mecanicos: string
+  riesgo_quimicos: string
+  riesgo_biologicos: string
+  riesgo_ergonomicos: string
+  riesgo_psicosociales: string
+  antecedentes_laborales: AntecedenteLaboral[]
+  accidentes_enfermedades: AccidenteEnfermedad[]
+  concepto_aptitud: ConceptoAptitud | null
+  recomendaciones: string
+  firma_profesional_nombre: string
+  firma_profesional_codigo: string
+  firma_trabajador: boolean
+  created_at: string
+  updated_at: string
+  worker?: Worker
+}
+
+export const CONCEPTO_APTITUD_LABELS: Record<ConceptoAptitud, string> = {
+  apto: 'Apto',
+  apto_observacion: 'Apto en Observación',
+  apto_limitaciones: 'Apto con Limitaciones',
+  no_apto: 'No Apto',
+}

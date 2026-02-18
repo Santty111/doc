@@ -31,6 +31,11 @@ export function DashboardHeader({ profile }: HeaderProps) {
     expiringCertificates: NotificationItem[]
     count: number
   } | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     fetch('/api/notifications')
@@ -60,6 +65,7 @@ export function DashboardHeader({ profile }: HeaderProps) {
             {profile.company.name}
           </span>
         )}
+        {mounted ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
@@ -102,6 +108,11 @@ export function DashboardHeader({ profile }: HeaderProps) {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+        ) : (
+          <Button variant="ghost" size="icon" className="relative" aria-hidden>
+            <Bell className="h-5 w-5" />
+          </Button>
+        )}
       </div>
     </header>
   )

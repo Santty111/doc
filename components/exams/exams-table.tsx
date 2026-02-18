@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Table,
   TableBody,
@@ -47,6 +47,10 @@ export function ExamsTable({ exams, workers }: ExamsTableProps) {
   const [search, setSearch] = useState('')
   const [selectedWorker, setSelectedWorker] = useState<string>('')
   const [selectedType, setSelectedType] = useState<string>('')
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const filteredExams = exams.filter((exam) => {
     const searchLower = search.toLowerCase()
@@ -150,6 +154,7 @@ export function ExamsTable({ exams, workers }: ExamsTableProps) {
                     )}
                   </TableCell>
                   <TableCell>
+                    {mounted ? (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -179,6 +184,11 @@ export function ExamsTable({ exams, workers }: ExamsTableProps) {
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    ) : (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" aria-hidden>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
