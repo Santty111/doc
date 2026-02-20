@@ -9,6 +9,7 @@ import {
   MedicalRecord,
   Certificate,
   MedicalExam,
+  CertificadoAptitudOficial,
 } from '@/lib/models'
 
 async function getUserId() {
@@ -123,4 +124,25 @@ export async function updateMedicalExam(
   await MedicalExam.findByIdAndUpdate(id, formData)
   revalidatePath('/dashboard/examenes')
   revalidatePath('/dashboard')
+}
+
+export async function createCertificadoAptitudOficial(
+  data: Record<string, unknown>
+) {
+  const userId = await getUserId()
+  if (!userId) throw new Error('No autorizado')
+  await connectDB()
+  const doc = await CertificadoAptitudOficial.create({
+    seccionA: data.seccionA,
+    seccionB: data.seccionB,
+    seccionC: data.seccionC,
+    seccionD: data.seccionD,
+    seccionE: data.seccionE,
+    seccionF: data.seccionF,
+    seccionG: data.seccionG,
+    created_by: userId,
+  })
+  revalidatePath('/dashboard/certificado-aptitud-oficial')
+  revalidatePath('/dashboard')
+  return { id: String(doc._id) }
 }

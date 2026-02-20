@@ -55,7 +55,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background print:block print:h-auto">
       <div className="print:hidden">
         <DashboardSidebar
           profile={profilePlain}
@@ -66,7 +66,7 @@ export default async function DashboardLayout({
         <div className="print:hidden">
           <DashboardHeader profile={profilePlain} />
         </div>
-        <main className="flex-1 overflow-auto p-6 print:p-0">
+        <main className="flex-1 overflow-auto p-6 print:overflow-visible print:p-0">
           {children}
         </main>
       </div>

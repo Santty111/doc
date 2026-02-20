@@ -4,6 +4,7 @@ import { connectDB } from '@/lib/db'
 import { User } from '@/lib/models'
 
 export const authOptions: NextAuthOptions = {
+  trustHost: true,
   providers: [
     CredentialsProvider({
       name: 'credentials',

@@ -8,6 +8,7 @@ import {
   Users,
   FileText,
   Award,
+  FileCheck,
   TestTube,
   BarChart3,
   Building2,
@@ -40,6 +41,11 @@ const navigation = [
   { name: 'Trabajadores', href: '/dashboard/trabajadores', icon: Users },
   { name: 'Expedientes Médicos', href: '/dashboard/expedientes', icon: FileText },
   { name: 'Constancias', href: '/dashboard/constancias', icon: Award },
+  {
+    name: 'Cert. Aptitud Oficial',
+    href: '/dashboard/certificado-aptitud-oficial',
+    icon: FileCheck,
+  },
   { name: 'Exámenes', href: '/dashboard/examenes', icon: TestTube },
   { name: 'Reportes', href: '/dashboard/reportes', icon: BarChart3 },
 ]
