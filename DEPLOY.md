@@ -1,44 +1,81 @@
-# Despliegue en Vercel + UploadThing
+# Despliegue en Vercel - MediControl
 
-## 1. Variables de entorno
+Guía para desplegar el sistema de Salud Ocupacional (incl. Certificado de Aptitud Oficial) en Vercel.
 
-Crea en Vercel (Project → Settings → Environment Variables) las siguientes. En local, usa `.env.local`.
+---
 
-| Variable | Descripción | Ejemplo |
-|----------|-------------|---------|
-| `MONGODB_URI` | Cadena de conexión de MongoDB (Atlas recomendado) | `mongodb+srv://user:pass@cluster.mongodb.net/medicontrol` |
-| `NEXTAUTH_SECRET` | Secreto para firmar sesiones (generar con `openssl rand -base64 32`) | string largo aleatorio |
-| `NEXTAUTH_URL` | URL pública de la app | En producción: `https://tu-app.vercel.app` |
-| `UPLOADTHING_TOKEN` | Token de UploadThing (ver abajo) | `sk_live_...` o token de desarrollo |
+## 1. Requisitos previos
 
-### Cómo obtener UPLOADTHING_TOKEN
+- [ ] Cuenta en [Vercel](https://vercel.com)
+- [ ] Repositorio en [GitHub](https://github.com) (el código debe estar subido)
+- [ ] Base de datos MongoDB (recomendado: [MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
+- [ ] Cuenta en [UploadThing](https://uploadthing.com) (para subida de archivos)
 
-1. Entra en [uploadthing.com](https://uploadthing.com) y crea cuenta o inicia sesión.
-2. En el [Dashboard](https://uploadthing.com/dashboard) crea una app (o usa la existente).
-3. En **API Keys** copia el **Token** (no el Secret en el backend; el token se usa en el cliente/servidor según la doc). En la doc actual figura como `UPLOADTHING_TOKEN` en `.env`.
-4. Añade ese valor como `UPLOADTHING_TOKEN` en Vercel y en tu `.env.local` para desarrollo.
+---
 
-## 2. Deploy en Vercel
+## 2. Variables de entorno
 
-1. Sube el repo a GitHub (si no está ya).
-2. En [vercel.com](https://vercel.com) → **Add New Project** → importa el repositorio.
-3. Framework Preset: **Next.js** (detectado automático).
-4. Configura las variables de entorno (arriba) en **Environment Variables**.
-5. **Deploy**. Tras el build, la app quedará en `https://tu-proyecto.vercel.app`.
+Crea en **Vercel** → tu proyecto → **Settings** → **Environment Variables** las siguientes:
 
-### NEXTAUTH_URL en producción
+| Variable | Descripción | Dónde obtener |
+|----------|-------------|---------------|
+| `MONGODB_URI` | Conexión a MongoDB | MongoDB Atlas → Connect → Connection string |
+| `NEXTAUTH_SECRET` | Secreto para sesiones | Generar: `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | URL pública de la app | En producción: `https://tu-proyecto.vercel.app` |
+| `UPLOADTHING_TOKEN` | Token UploadThing | [uploadthing.com/dashboard](https://uploadthing.com/dashboard) → API Keys |
 
-- En **Production** pon: `https://tu-dominio.vercel.app`.
-- En **Preview** (ramas) puedes usar la URL que te asigne Vercel (ej. `https://tu-proyecto-git-rama-tu.vercel.app`) o dejar la misma de producción si usas una sola URL.
+### NEXTAUTH_URL
 
-## 3. UploadThing (archivos de exámenes)
+- **Production**: `https://tu-dominio.vercel.app`
+- **Preview**: `https://tu-proyecto-git-rama-nombre.vercel.app` (o la URL que asigne Vercel)
 
-- Los archivos que suban los usuarios en **Exámenes** se guardan en UploadThing, no en el disco del servidor.
-- En MongoDB solo se guarda la **URL** del archivo (y el nombre); esa URL apunta a los servidores de UploadThing.
-- Sin `UPLOADTHING_TOKEN` configurado, la subida de archivos en exámenes fallará (el resto de la app puede seguir funcionando).
+### UPLOADTHING_TOKEN
 
-## 4. Notas
+1. Entra en [uploadthing.com](https://uploadthing.com) e inicia sesión.
+2. Dashboard → **API Keys** → copia el **Token**.
+3. Añade en Vercel como `UPLOADTHING_TOKEN`.
 
-- **Archivos subidos antes del cambio**: Si tenías archivos en `public/uploads/exams/` (subida local), esas URLs dejarán de funcionar en Vercel porque el filesystem no es persistente. Solo los exámenes nuevos (subidos con UploadThing) tendrán enlace válido.
-- **MongoDB**: Usa MongoDB Atlas u otro servicio accesible desde internet; la URI debe ser válida desde los servidores de Vercel.
-- **NextAuth**: Asegura que en tu proveedor de credenciales (o callbacks) uses `NEXTAUTH_URL` correcta para callbacks y cookies.
+---
+
+## 3. Pasos para deployar
+
+### Opción A: Desde el dashboard de Vercel
+
+1. Ve a [vercel.com/new](https://vercel.com/new).
+2. **Import** tu repositorio de GitHub.
+3. Vercel detectará **Next.js** automáticamente.
+4. En **Environment Variables**, añade las 4 variables de la tabla anterior.
+5. Haz clic en **Deploy**.
+
+### Opción B: Con Vercel CLI
+
+```bash
+# Instalar Vercel CLI
+pnpm add -g vercel
+
+# En la raíz del proyecto
+cd doc
+vercel
+
+# Seguir las instrucciones y vincular el proyecto
+```
+
+---
+
+## 4. Verificar el deploy
+
+1. Tras el build, la app estará en `https://tu-proyecto.vercel.app`.
+2. Comprueba:
+   - [ ] Login funciona (NextAuth)
+   - [ ] Dashboard carga
+   - [ ] Certificado de Aptitud Oficial: crear y listar
+   - [ ] Subida de archivos (si usas exámenes con UploadThing)
+
+---
+
+## 5. Notas importantes
+
+- **MongoDB Atlas**: La URI debe permitir conexiones desde cualquier IP (0.0.0.0/0) o añade los IPs de Vercel.
+- **NextAuth**: En Vercel, desactiva **Vercel Authentication** en Project Settings si da conflictos.
+- **UploadThing**: Sin el token, la subida de archivos fallará; el resto de la app puede funcionar.
+- **Build**: El proyecto usa `pnpm`. Vercel lo detecta por `pnpm-lock.yaml` o `vercel.json`.

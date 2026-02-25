@@ -139,7 +139,7 @@ export function CertificadoSeccionFinal({
               name="profesional.codigo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Código</FormLabel>
+                  <FormLabel>Cedula</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Ej: 1716753973"
