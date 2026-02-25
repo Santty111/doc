@@ -463,7 +463,7 @@ export function CertificadoAptitudOficialPrintView({
                 <td className={`${dataCell} border-r border-gray-300`}>{seccionF.nombre_apellido}</td>
               </tr>
               <tr>
-                <td className={`${headerCell} border-r border-gray-300`}>CÓDIGO</td>
+                <td className={`${headerCell} border-r border-gray-300`}>CEDULA</td>
               </tr>
               <tr>
                 <td className={`${dataCell} border-r border-gray-300`}>{seccionF.codigo}</td>

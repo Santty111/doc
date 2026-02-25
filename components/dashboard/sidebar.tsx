@@ -16,6 +16,7 @@ import {
   Settings,
   LogOut,
   Heart,
+  ClipboardList,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -41,6 +42,11 @@ const navigation = [
   { name: 'Trabajadores', href: '/dashboard/trabajadores', icon: Users },
   { name: 'Expedientes Médicos', href: '/dashboard/expedientes', icon: FileText },
   { name: 'Constancias', href: '/dashboard/constancias', icon: Award },
+  {
+    name: 'Fichas Médicas',
+    href: '/dashboard/fichas-medicas',
+    icon: ClipboardList,
+  },
   {
     name: 'Cert. Aptitud Oficial',
     href: '/dashboard/certificado-aptitud-oficial',

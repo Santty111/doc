@@ -10,6 +10,7 @@ import {
   Certificate,
   MedicalExam,
   CertificadoAptitudOficial,
+  FichaMedicaEvaluacion1,
 } from '@/lib/models'
 
 async function getUserId() {
@@ -143,6 +144,36 @@ export async function createCertificadoAptitudOficial(
     created_by: userId,
   })
   revalidatePath('/dashboard/certificado-aptitud-oficial')
+  revalidatePath('/dashboard')
+  return { id: String(doc._id) }
+}
+
+function toPlainObject(obj: unknown): unknown {
+  if (obj == null) return obj
+  try {
+    return JSON.parse(JSON.stringify(obj))
+  } catch {
+    return obj
+  }
+}
+
+export async function createFichaMedicaEvaluacion1(
+  data: Record<string, unknown>
+) {
+  const userId = await getUserId()
+  if (!userId) throw new Error('No autorizado')
+  await connectDB()
+  const doc = await FichaMedicaEvaluacion1.create({
+    seccionA: toPlainObject(data.seccionA) ?? {},
+    seccionB: data.seccionB != null ? toPlainObject(data.seccionB) : null,
+    seccionC: data.seccionC != null ? toPlainObject(data.seccionC) : null,
+    seccionD: data.seccionD != null ? toPlainObject(data.seccionD) : null,
+    seccionE: data.seccionE != null ? toPlainObject(data.seccionE) : null,
+    seccionF: data.seccionF != null ? toPlainObject(data.seccionF) : null,
+    created_by: userId,
+  })
+  revalidatePath('/dashboard/fichas-medicas')
+  revalidatePath('/dashboard/fichas-medicas/evaluacion-1-3')
   revalidatePath('/dashboard')
   return { id: String(doc._id) }
 }

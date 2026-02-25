@@ -75,7 +75,7 @@ export function ConstanciaPrintView({
               <p className="text-xs text-muted-foreground">Trabajador</p>
               <p className="font-medium">{certificate.workerName}</p>
               <p className="text-sm text-muted-foreground">
-                Código: {certificate.employeeCode}
+                Cedula: {certificate.employeeCode}
                 {certificate.companyName ? ` · ${certificate.companyName}` : ''}
               </p>
             </div>
