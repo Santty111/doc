@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getProfile } from '@/lib/auth-server'
 import { connectDB } from '@/lib/db'
-import { Certificate, Worker } from '@/lib/models'
+import { CertificadoAptitudOficial, Worker } from '@/lib/models'
 
-/** GET: constancias que vencen en los próximos 30 días (respeta filtro de empresa del usuario). */
+/** GET: certificados de aptitud oficiales recientes (respeta filtro de empresa del usuario). */
 export async function GET() {
   try {
     const profile = await getProfile()
@@ -16,61 +16,44 @@ export async function GET() {
     const workerIds = profile.company_id
       ? await Worker.find(workerFilter).distinct('_id')
       : null
+    const workerIdStrings = workerIds?.map((id) => String(id)) ?? []
     const certFilter =
       workerIds !== null
         ? {
-            worker_id: { $in: workerIds },
-            expiry_date: {
-              $gte: new Date(),
-              $lte: (() => {
-                const d = new Date()
-                d.setDate(d.getDate() + 30)
-                return d
-              })(),
-            },
+            $or: [
+              { worker_id: { $in: workerIds } },
+              { worker_id: { $in: workerIdStrings } },
+              { 'worker_snapshot.worker_id': { $in: workerIdStrings } },
+            ],
           }
-        : {
-            expiry_date: {
-              $gte: new Date(),
-              $lte: (() => {
-                const d = new Date()
-                d.setDate(d.getDate() + 30)
-                return d
-              })(),
-            },
-          }
+        : {}
 
-    const certs = await Certificate.find(certFilter)
-      .sort({ expiry_date: 1 })
+    const certs = await CertificadoAptitudOficial.find(certFilter)
+      .sort({ createdAt: -1 })
       .limit(10)
       .populate('worker_id', 'first_name last_name employee_code')
       .lean()
 
-    const thirtyDaysFromNow = new Date()
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
-    const now = new Date()
-    const count = await Certificate.countDocuments(
-      workerIds !== null
-        ? {
-            worker_id: { $in: workerIds },
-            expiry_date: { $gte: now, $lte: thirtyDaysFromNow },
-          }
-        : { expiry_date: { $gte: now, $lte: thirtyDaysFromNow } }
-    )
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const count = await CertificadoAptitudOficial.countDocuments({
+      ...certFilter,
+      createdAt: { $gte: thirtyDaysAgo },
+    })
 
-    const expiringCertificates = (certs as { _id: unknown; expiry_date: Date; worker_id?: { first_name?: string; last_name?: string; employee_code?: string } }[]).map(
+    const recentCertificates = (certs as { _id: unknown; createdAt: Date; worker_id?: { first_name?: string; last_name?: string; employee_code?: string } }[]).map(
       (c) => ({
         id: String(c._id),
         workerName: c.worker_id
           ? `${c.worker_id.first_name ?? ''} ${c.worker_id.last_name ?? ''}`.trim()
           : '',
         employeeCode: c.worker_id?.employee_code ?? '',
-        expiry_date: c.expiry_date instanceof Date ? c.expiry_date.toISOString() : String(c.expiry_date),
+        created_at: c.createdAt instanceof Date ? c.createdAt.toISOString() : String(c.createdAt),
       })
     )
 
     return NextResponse.json({
-      expiringCertificates,
+      recentCertificates,
       count,
     })
   } catch (e) {

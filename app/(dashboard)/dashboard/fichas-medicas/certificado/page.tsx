@@ -1,8 +1,13 @@
 import { connectDB } from '@/lib/db'
-import { CertificadoFichaMedica } from '@/lib/models'
+import { CertificadoFichaMedica, Worker, User } from '@/lib/models'
 import { Button } from '@/components/ui/button'
 import { Plus, FileText, Printer } from 'lucide-react'
 import Link from 'next/link'
+import { getProfile } from '@/lib/auth-server'
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
 
 function formatDate(date: unknown): string {
   if (!date) return '-'
@@ -15,8 +20,69 @@ function formatDate(date: unknown): string {
 }
 
 export default async function CertificadoFichaMedicaListPage() {
+  const profile = await getProfile()
   await connectDB()
-  const certificados = await CertificadoFichaMedica.find()
+  const workerFilter = profile?.company_id ? { company_id: profile.company_id } : {}
+  const workerIds = profile?.company_id
+    ? await Worker.find(workerFilter).distinct('_id')
+    : null
+  const hasWorkersInCompany = (workerIds?.length ?? 0) > 0
+  const companyUserIds = profile?.company_id
+    ? await User.find({ company_id: profile.company_id }).distinct('_id')
+    : null
+  const workerIdStrings = workerIds?.map((id) => String(id)) ?? []
+  const strictWorkerFilter =
+    workerIds !== null
+      ? {
+          $or: [
+            { worker_id: { $in: workerIds } },
+            { worker_id: { $in: workerIdStrings } },
+            { 'worker_snapshot.worker_id': { $in: workerIdStrings } },
+          ],
+        }
+      : {}
+  const companyName = profile?.company?.name?.trim()
+  const legacyByCompanyName =
+    profile?.company_id && companyName
+      ? {
+          $or: [
+            { 'seccionA.establecimiento.institucion_sistema': { $regex: `^${escapeRegex(companyName)}$`, $options: 'i' } },
+            { 'seccionA.institucion_sistema': { $regex: `^${escapeRegex(companyName)}$`, $options: 'i' } },
+          ],
+        }
+      : null
+  const legacyByCreator =
+    companyUserIds !== null && hasWorkersInCompany
+      ? {
+          $and: [
+            { created_by: { $in: companyUserIds } },
+            {
+              $or: [
+                { worker_id: { $exists: false } },
+                { worker_id: null },
+              ],
+            },
+            {
+              $or: [
+                { 'worker_snapshot.worker_id': { $exists: false } },
+                { 'worker_snapshot.worker_id': null },
+              ],
+            },
+          ],
+        }
+      : null
+  const certFilter =
+    legacyByCompanyName || legacyByCreator
+      ? {
+          $or: [
+            strictWorkerFilter,
+            ...(legacyByCompanyName ? [legacyByCompanyName] : []),
+            ...(legacyByCreator ? [legacyByCreator] : []),
+          ],
+        }
+      : strictWorkerFilter
+
+  const certificados = await CertificadoFichaMedica.find(certFilter)
     .sort({ createdAt: -1 })
     .lean()
 

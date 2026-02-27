@@ -126,6 +126,20 @@ export default async function ExamenDetailPage({
                 </a>
               </div>
             )}
+            {plain.consentimiento_informado_url && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Consentimiento informado</p>
+                <a
+                  href={plain.consentimiento_informado_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  {plain.consentimiento_informado_name ?? 'Ver consentimiento informado'}
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </div>
+            )}
           </CardContent>
         </Card>
 

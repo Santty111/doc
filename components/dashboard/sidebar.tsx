@@ -6,8 +6,6 @@ import { cn } from '@/lib/utils'
 import type { Profile, Company } from '@/lib/types'
 import {
   Users,
-  FileText,
-  Award,
   FileCheck,
   TestTube,
   BarChart3,
@@ -40,8 +38,6 @@ const COMPANY_FILTER_ALL = '__all__'
 const navigation = [
   { name: 'Inicio', href: '/dashboard', icon: Home },
   { name: 'Trabajadores', href: '/dashboard/trabajadores', icon: Users },
-  { name: 'Expedientes Médicos', href: '/dashboard/expedientes', icon: FileText },
-  { name: 'Constancias', href: '/dashboard/constancias', icon: Award },
   {
     name: 'Fichas Médicas',
     href: '/dashboard/fichas-medicas',

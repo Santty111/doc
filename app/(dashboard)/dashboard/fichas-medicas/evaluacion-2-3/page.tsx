@@ -1,8 +1,9 @@
 import { connectDB } from '@/lib/db'
-import { FichaMedicaEvaluacion2 } from '@/lib/models'
+import { FichaMedicaEvaluacion2, Worker, User } from '@/lib/models'
 import { Button } from '@/components/ui/button'
 import { Plus, FileText, Printer } from 'lucide-react'
 import Link from 'next/link'
+import { getProfile } from '@/lib/auth-server'
 
 function formatDate(date: unknown): string {
   if (!date) return '-'
@@ -15,8 +16,51 @@ function formatDate(date: unknown): string {
 }
 
 export default async function FichaEva2ListPage() {
+  const profile = await getProfile()
   await connectDB()
-  const fichas = await FichaMedicaEvaluacion2.find()
+  const workerFilter = profile?.company_id ? { company_id: profile.company_id } : {}
+  const workerIds = profile?.company_id
+    ? await Worker.find(workerFilter).distinct('_id')
+    : null
+  const hasWorkersInCompany = (workerIds?.length ?? 0) > 0
+  const companyUserIds = profile?.company_id
+    ? await User.find({ company_id: profile.company_id }).distinct('_id')
+    : null
+  const workerIdStrings = workerIds?.map((id) => String(id)) ?? []
+  const strictWorkerFilter =
+    workerIds !== null
+      ? {
+          $or: [
+            { worker_id: { $in: workerIds } },
+            { worker_id: { $in: workerIdStrings } },
+            { 'worker_snapshot.worker_id': { $in: workerIdStrings } },
+          ],
+        }
+      : {}
+  const legacyByCreator =
+    companyUserIds !== null && hasWorkersInCompany
+      ? {
+          $and: [
+            { created_by: { $in: companyUserIds } },
+            {
+              $or: [
+                { worker_id: { $exists: false } },
+                { worker_id: null },
+              ],
+            },
+            {
+              $or: [
+                { 'worker_snapshot.worker_id': { $exists: false } },
+                { 'worker_snapshot.worker_id': null },
+              ],
+            },
+          ],
+        }
+      : null
+  const fichaFilter = legacyByCreator
+    ? { $or: [strictWorkerFilter, legacyByCreator] }
+    : strictWorkerFilter
+  const fichas = await FichaMedicaEvaluacion2.find(fichaFilter)
     .sort({ createdAt: -1 })
     .lean()
 

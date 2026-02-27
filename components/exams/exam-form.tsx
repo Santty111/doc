@@ -39,6 +39,7 @@ export function ExamForm({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
+  const [consentFile, setConsentFile] = useState<File | null>(null)
 
   const { startUpload } = useUploadThing('examDocument', {
     onUploadError: (err) => {
@@ -71,8 +72,24 @@ export function ExamForm({
   }
 
   const removeFile = () => setFile(null)
+  const removeConsentFile = () => setConsentFile(null)
 
-  const saveExam = async (fileUrl: string | null, fileName: string | null) => {
+  const handleConsentFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) setConsentFile(e.target.files[0])
+  }
+
+  const availableExamTypes = EXAM_TYPES.includes(formData.exam_type as (typeof EXAM_TYPES)[number])
+    ? EXAM_TYPES
+    : formData.exam_type
+      ? ([formData.exam_type, ...EXAM_TYPES] as const)
+      : EXAM_TYPES
+
+  const saveExam = async (
+    fileUrl: string | null,
+    fileName: string | null,
+    consentimientoUrl: string | null,
+    consentimientoName: string | null
+  ) => {
     const dataToSave = {
       worker_id: formData.worker_id,
       exam_type: formData.exam_type,
@@ -82,6 +99,8 @@ export function ExamForm({
       observations: formData.observations || null,
       file_url: fileUrl,
       file_name: fileName,
+      consentimiento_informado_url: consentimientoUrl,
+      consentimiento_informado_name: consentimientoName,
     }
     if (exam) {
       await updateMedicalExam(exam.id, dataToSave)
@@ -98,15 +117,26 @@ export function ExamForm({
     setError(null)
 
     try {
+      let fileUrl = exam?.file_url || null
+      let fileName = exam?.file_name || null
+      let consentimientoUrl = exam?.consentimiento_informado_url || null
+      let consentimientoName = exam?.consentimiento_informado_name || null
+
       if (file) {
         const res = await startUpload([file])
         const first = res?.[0]
-        const fileUrl = getFileUrl(first ?? null)
-        const fileName = first?.name ?? null
-        await saveExam(fileUrl, fileName)
-      } else {
-        await saveExam(exam?.file_url || null, exam?.file_name || null)
+        fileUrl = getFileUrl(first ?? null)
+        fileName = first?.name ?? null
       }
+
+      if (consentFile) {
+        const res = await startUpload([consentFile])
+        const first = res?.[0]
+        consentimientoUrl = getFileUrl(first ?? null)
+        consentimientoName = first?.name ?? null
+      }
+
+      await saveExam(fileUrl, fileName, consentimientoUrl, consentimientoName)
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : 'Error al guardar el examen'
@@ -158,7 +188,7 @@ export function ExamForm({
                 <SelectValue placeholder="Seleccionar tipo" />
               </SelectTrigger>
               <SelectContent>
-                {EXAM_TYPES.map((type) => (
+                {availableExamTypes.map((type) => (
                   <SelectItem key={type} value={type}>
                     {type}
                   </SelectItem>
@@ -269,6 +299,64 @@ export function ExamForm({
                 className="text-sm text-primary hover:underline"
               >
                 Ver archivo actual
+              </a>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Consentimiento informado</CardTitle>
+          <CardDescription>Adjunte el PDF firmado de consentimiento informado</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {consentFile ? (
+            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <Upload className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">{consentFile.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {(consentFile.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              </div>
+              <Button type="button" variant="ghost" size="icon" onClick={removeConsentFile}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="relative">
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handleConsentFileChange}
+                className="absolute inset-0 cursor-pointer opacity-0"
+              />
+              <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50">
+                <Upload className="mb-2 h-8 w-8 text-muted-foreground" />
+                <p className="text-sm font-medium">Haga clic para seleccionar consentimiento informado</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Solo PDF (máx. 8MB)
+                </p>
+              </div>
+            </div>
+          )}
+          {exam?.consentimiento_informado_url && !consentFile && (
+            <div className="mt-4 rounded-lg bg-secondary p-4">
+              <p className="text-sm text-muted-foreground">
+                Archivo actual: {exam.consentimiento_informado_name || 'Consentimiento informado'}
+              </p>
+              <a
+                href={exam.consentimiento_informado_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline"
+              >
+                Ver consentimiento informado actual
               </a>
             </div>
           )}

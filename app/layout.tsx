@@ -9,7 +9,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'MediControl - Sistema de Salud Ocupacional',
-  description: 'Sistema de gestión de salud ocupacional para administración de expedientes médicos, constancias de aptitud y exámenes médicos',
+  description: 'Sistema de gestión de salud ocupacional para administración de fichas médicas, certificados y exámenes médicos',
   generator: 'v0.app',
   icons: {
     icon: [

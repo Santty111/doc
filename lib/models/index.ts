@@ -1,8 +1,6 @@
 export { Company } from './Company'
 export { User, hashPassword } from './User'
 export { Worker } from './Worker'
-export { MedicalRecord } from './MedicalRecord'
-export { Certificate } from './Certificate'
 export { MedicalExam } from './MedicalExam'
 export { CertificadoAptitudOficial } from './CertificadoAptitudOficial'
 export { FichaMedicaEvaluacion1 } from './FichaMedicaEvaluacion1'

@@ -13,6 +13,8 @@ const medicalExamSchema = new mongoose.Schema(
     results: { type: String, default: null },
     file_url: { type: String, default: null },
     file_name: { type: String, default: null },
+    consentimiento_informado_url: { type: String, default: null },
+    consentimiento_informado_name: { type: String, default: null },
     observations: { type: String, default: null },
     created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   },

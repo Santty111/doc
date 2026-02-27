@@ -1,11 +1,20 @@
 import { connectDB } from '@/lib/db'
-import { Worker, Certificate, MedicalExam } from '@/lib/models'
+import {
+  Worker,
+  User,
+  FichaMedicaEvaluacion1,
+  FichaMedicaEvaluacion2,
+  FichaMedicaEvaluacion3,
+  CertificadoFichaMedica,
+  CertificadoAptitudOficial,
+  MedicalExam,
+} from '@/lib/models'
 import { getProfile } from '@/lib/auth-server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Users,
-  FileText,
-  Award,
+  ClipboardList,
+  FileCheck,
   TestTube,
   AlertTriangle,
   CheckCircle,
@@ -14,6 +23,10 @@ import {
   Building2,
 } from 'lucide-react'
 
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 export default async function ReportesPage() {
   const profile = await getProfile()
   await connectDB()
@@ -21,12 +34,101 @@ export default async function ReportesPage() {
   const workerIds = profile?.company_id
     ? await Worker.find(workerFilter).distinct('_id')
     : null
-  const certFilter = workerIds !== null ? { worker_id: { $in: workerIds } } : {}
-  const examFilter = workerIds !== null ? { worker_id: { $in: workerIds } } : {}
+  const hasWorkersInCompany = (workerIds?.length ?? 0) > 0
+  const companyUserIds = profile?.company_id
+    ? await User.find({ company_id: profile.company_id }).distinct('_id')
+    : null
+  const workerIdStrings = workerIds?.map((id) => String(id)) ?? []
+  const scopedFilter =
+    workerIds !== null
+      ? {
+          $or: [
+            { worker_id: { $in: workerIds } },
+            { worker_id: { $in: workerIdStrings } },
+            { 'worker_snapshot.worker_id': { $in: workerIdStrings } },
+          ],
+        }
+      : {}
+  const examFilter =
+    workerIds !== null
+      ? {
+          $or: [
+            { worker_id: { $in: workerIds } },
+            { worker_id: { $in: workerIdStrings } },
+          ],
+        }
+      : {}
+  const companyName = profile?.company?.name?.trim() ?? ''
+  const legacyCompanyFilter =
+    profile?.company_id && companyName
+      ? {
+          $or: [
+            {
+              'seccionA.establecimiento.institucion_sistema': {
+                $regex: `^${escapeRegex(companyName)}$`,
+                $options: 'i',
+              },
+            },
+            {
+              'seccionA.institucion_sistema': {
+                $regex: `^${escapeRegex(companyName)}$`,
+                $options: 'i',
+              },
+            },
+          ],
+        }
+      : null
+  const legacyCreatorFilter =
+    companyUserIds !== null && hasWorkersInCompany
+      ? {
+          $and: [
+            { created_by: { $in: companyUserIds } },
+            {
+              $or: [
+                { worker_id: { $exists: false } },
+                { worker_id: null },
+              ],
+            },
+            {
+              $or: [
+                { 'worker_snapshot.worker_id': { $exists: false } },
+                { 'worker_snapshot.worker_id': null },
+                { 'worker_snapshot.worker_id': '' },
+              ],
+            },
+          ],
+        }
+      : null
+  const ficha1Filter =
+    legacyCompanyFilter != null || legacyCreatorFilter != null
+      ? {
+          $or: [
+            scopedFilter,
+            ...(legacyCompanyFilter ? [legacyCompanyFilter] : []),
+            ...(legacyCreatorFilter ? [legacyCreatorFilter] : []),
+          ],
+        }
+      : scopedFilter
+  const ficha2Filter = legacyCreatorFilter != null ? { $or: [scopedFilter, legacyCreatorFilter] } : scopedFilter
+  const ficha3Filter = legacyCreatorFilter != null ? { $or: [scopedFilter, legacyCreatorFilter] } : scopedFilter
+  const certFichaFilter =
+    legacyCompanyFilter != null || legacyCreatorFilter != null
+      ? {
+          $or: [
+            scopedFilter,
+            ...(legacyCompanyFilter ? [legacyCompanyFilter] : []),
+            ...(legacyCreatorFilter ? [legacyCreatorFilter] : []),
+          ],
+        }
+      : scopedFilter
 
-  const [workersByStatus, certificatesByResult, examsByType] = await Promise.all([
+  const [workersByStatus, ficha1, ficha2, ficha3, certFicha, certAptitudDocs, examsByType] = await Promise.all([
     Worker.find(workerFilter).populate('company_id', 'name').lean(),
-    Certificate.find(certFilter).select('result certificate_type').lean(),
+    FichaMedicaEvaluacion1.find(ficha1Filter).select('_id seccionB').lean(),
+    FichaMedicaEvaluacion2.find(ficha2Filter).select('_id').lean(),
+    FichaMedicaEvaluacion3.find(ficha3Filter).select('_id seccionL').lean(),
+    CertificadoFichaMedica.find(certFichaFilter).select('_id').lean(),
+    CertificadoAptitudOficial.find(scopedFilter).select('_id').lean(),
     MedicalExam.find(examFilter).select('exam_type').lean(),
   ])
 
@@ -41,17 +143,28 @@ export default async function ReportesPage() {
       (w) => w.status === 'terminated'
     ).length || 0
 
-  const certs = certificatesByResult as { result: string; certificate_type: string }[]
-  const aptoCerts = certs.filter((c) => c.result === 'apto').length || 0
-  const restriccionesCerts =
-    certs.filter((c) => c.result === 'apto_con_restricciones').length || 0
-  const noAptoCerts = certs.filter((c) => c.result === 'no_apto').length || 0
-  const pendienteCerts = certs.filter((c) => c.result === 'pendiente').length || 0
+  const ficha1Count = ficha1.length
+  const ficha2Count = ficha2.length
+  const ficha3Count = ficha3.length
+  const certFichaCount = certFicha.length
+  const certAptitudCount = certAptitudDocs.length
 
-  const ingresoCerts = certs.filter((c) => c.certificate_type === 'ingreso').length || 0
-  const periodicoCerts =
-    certs.filter((c) => c.certificate_type === 'periodico').length || 0
-  const egresoCerts = certs.filter((c) => c.certificate_type === 'egreso').length || 0
+  const ficha1Stats = ficha1 as { seccionB?: { tipo_evaluacion?: string } }[]
+  const ficha3Stats = ficha3 as { seccionL?: { aptitud?: string } }[]
+
+  // "Constancias por tipo" ahora se alimenta de Ficha 1-3 (seccionB.tipo_evaluacion)
+  const ingresoCerts = ficha1Stats.filter((f) => f.seccionB?.tipo_evaluacion === 'ingreso').length
+  const periodicoCerts = ficha1Stats.filter((f) => f.seccionB?.tipo_evaluacion === 'periodico').length
+  const egresoCerts = ficha1Stats.filter((f) =>
+    f.seccionB?.tipo_evaluacion === 'retiro' || f.seccionB?.tipo_evaluacion === 'egreso'
+  ).length
+
+  // "Constancias por resultado" ahora se alimenta de Ficha 3-3 (seccionL.aptitud)
+  const aptoCerts = ficha3Stats.filter((f) => f.seccionL?.aptitud === 'apto').length
+  const aptoObservacionCerts = ficha3Stats.filter((f) => f.seccionL?.aptitud === 'apto_observacion').length
+  const aptoLimitacionesCerts = ficha3Stats.filter((f) => f.seccionL?.aptitud === 'apto_limitaciones').length
+  const noAptoCerts = ficha3Stats.filter((f) => f.seccionL?.aptitud === 'no_apto').length
+  const totalResultados = ficha3Stats.length || 1
 
   const examCounts = (examsByType as { exam_type: string }[]).reduce(
     (acc, exam) => {
@@ -73,8 +186,6 @@ export default async function ReportesPage() {
     },
     {} as Record<string, number>
   )
-
-  const totalCerts = certs.length || 1
 
   return (
     <div className="space-y-6">
@@ -126,13 +237,13 @@ export default async function ReportesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Trabajadores
+              Fichas Médicas Totales
             </CardTitle>
-            <Users className="h-4 w-4 text-primary" />
+            <ClipboardList className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-primary">
-              {activeWorkers + inactiveWorkers + terminatedWorkers}
+              {ficha1Count + ficha2Count + ficha3Count}
             </div>
           </CardContent>
         </Card>
@@ -142,7 +253,7 @@ export default async function ReportesPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Award className="h-5 w-5 text-primary" />
+              <FileCheck className="h-5 w-5 text-primary" />
               <CardTitle>Constancias por Resultado</CardTitle>
             </div>
             <CardDescription>
@@ -158,12 +269,7 @@ export default async function ReportesPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-32 rounded-full bg-secondary overflow-hidden">
-                    <div
-                      className="h-full bg-accent"
-                      style={{
-                        width: `${(aptoCerts / totalCerts) * 100}%`,
-                      }}
-                    />
+                    <div className="h-full bg-accent" style={{ width: `${(aptoCerts / totalResultados) * 100}%` }} />
                   </div>
                   <span className="font-medium w-8 text-right">{aptoCerts}</span>
                 </div>
@@ -171,20 +277,25 @@ export default async function ReportesPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-warning" />
-                  <span>Con Restricciones</span>
+                  <span>Apto en observación</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-32 rounded-full bg-secondary overflow-hidden">
-                    <div
-                      className="h-full bg-warning"
-                      style={{
-                        width: `${(restriccionesCerts / totalCerts) * 100}%`,
-                      }}
-                    />
+                    <div className="h-full bg-warning" style={{ width: `${(aptoObservacionCerts / totalResultados) * 100}%` }} />
                   </div>
-                  <span className="font-medium w-8 text-right">
-                    {restriccionesCerts}
-                  </span>
+                  <span className="font-medium w-8 text-right">{aptoObservacionCerts}</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-warning" />
+                  <span>Apto con limitaciones</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-32 rounded-full bg-secondary overflow-hidden">
+                    <div className="h-full bg-warning" style={{ width: `${(aptoLimitacionesCerts / totalResultados) * 100}%` }} />
+                  </div>
+                  <span className="font-medium w-8 text-right">{aptoLimitacionesCerts}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
@@ -194,33 +305,9 @@ export default async function ReportesPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-32 rounded-full bg-secondary overflow-hidden">
-                    <div
-                      className="h-full bg-destructive"
-                      style={{
-                        width: `${(noAptoCerts / totalCerts) * 100}%`,
-                      }}
-                    />
+                    <div className="h-full bg-destructive" style={{ width: `${(noAptoCerts / totalResultados) * 100}%` }} />
                   </div>
                   <span className="font-medium w-8 text-right">{noAptoCerts}</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span>Pendiente</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-32 rounded-full bg-secondary overflow-hidden">
-                    <div
-                      className="h-full bg-muted-foreground"
-                      style={{
-                        width: `${(pendienteCerts / totalCerts) * 100}%`,
-                      }}
-                    />
-                  </div>
-                  <span className="font-medium w-8 text-right">
-                    {pendienteCerts}
-                  </span>
                 </div>
               </div>
             </div>
@@ -230,7 +317,7 @@ export default async function ReportesPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-chart-4" />
+              <FileCheck className="h-5 w-5 text-chart-4" />
               <CardTitle>Constancias por Tipo</CardTitle>
             </div>
             <CardDescription>
@@ -250,6 +337,58 @@ export default async function ReportesPage() {
               <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
                 <span>Egreso</span>
                 <span className="text-2xl font-bold">{egresoCerts}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              <CardTitle>Fichas por Tipo</CardTitle>
+            </div>
+            <CardDescription>
+              Distribución de evaluaciones médicas ocupacionales
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span>Ficha 1-3</span>
+                <span className="text-2xl font-bold">{ficha1Count}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Ficha 2-3</span>
+                <span className="text-2xl font-bold">{ficha2Count}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Ficha 3-3</span>
+                <span className="text-2xl font-bold">{ficha3Count}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <FileCheck className="h-5 w-5 text-chart-4" />
+              <CardTitle>Certificados Nuevos por Tipo</CardTitle>
+            </div>
+            <CardDescription>
+              Certificado de ficha médica y certificado de aptitud oficial
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                <span>Certificado ficha médica</span>
+                <span className="text-2xl font-bold">{certFichaCount}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                <span>Certificado aptitud oficial</span>
+                <span className="text-2xl font-bold">{certAptitudCount}</span>
               </div>
             </div>
           </CardContent>

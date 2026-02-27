@@ -15,7 +15,16 @@ export default async function ExamenesPage() {
   const workerIds = profile?.company_id
     ? await Worker.find(workerFilter).distinct('_id')
     : null
-  const examFilter = workerIds !== null ? { worker_id: { $in: workerIds } } : {}
+  const workerIdStrings = workerIds?.map((id) => String(id)) ?? []
+  const examFilter =
+    workerIds !== null
+      ? {
+          $or: [
+            { worker_id: { $in: workerIds } },
+            { worker_id: { $in: workerIdStrings } },
+          ],
+        }
+      : {}
   const [exams, workers] = await Promise.all([
     MedicalExam.find(examFilter)
       .sort({ exam_date: -1 })

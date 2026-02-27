@@ -1,14 +1,22 @@
 import { connectDB } from '@/lib/db'
 import {
   Worker,
-  MedicalRecord,
-  Certificate,
+  User,
+  FichaMedicaEvaluacion1,
+  FichaMedicaEvaluacion2,
+  FichaMedicaEvaluacion3,
+  CertificadoFichaMedica,
+  CertificadoAptitudOficial,
   MedicalExam,
 } from '@/lib/models'
 import { getProfile } from '@/lib/auth-server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, FileText, Award, TestTube, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Users, ClipboardList, FileCheck, TestTube, Activity, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
 
 export default async function DashboardPage() {
   const profile = await getProfile()
@@ -18,33 +26,122 @@ export default async function DashboardPage() {
   const workerIds = profile?.company_id
     ? await Worker.find(workerFilter).distinct('_id')
     : null
-  const recordFilter = workerIds !== null ? { worker_id: { $in: workerIds } } : {}
-  const certFilter = workerIds !== null ? { worker_id: { $in: workerIds } } : {}
-  const examFilter = workerIds !== null ? { worker_id: { $in: workerIds } } : {}
+  const hasWorkersInCompany = (workerIds?.length ?? 0) > 0
+  const companyUserIds = profile?.company_id
+    ? await User.find({ company_id: profile.company_id }).distinct('_id')
+    : null
+  const workerIdStrings = workerIds?.map((id) => String(id)) ?? []
+  const workerScopedFilter =
+    workerIds !== null
+      ? {
+          $or: [
+            { worker_id: { $in: workerIds } },
+            { worker_id: { $in: workerIdStrings } },
+            { 'worker_snapshot.worker_id': { $in: workerIdStrings } },
+          ],
+        }
+      : {}
+  const examFilter =
+    workerIds !== null
+      ? {
+          $or: [
+            { worker_id: { $in: workerIds } },
+            { worker_id: { $in: workerIdStrings } },
+          ],
+        }
+      : {}
+  const companyName = profile?.company?.name?.trim() ?? ''
+  const legacyCompanyFilter =
+    profile?.company_id && companyName
+      ? {
+          $or: [
+            {
+              'seccionA.establecimiento.institucion_sistema': {
+                $regex: `^${escapeRegex(companyName)}$`,
+                $options: 'i',
+              },
+            },
+            {
+              'seccionA.institucion_sistema': {
+                $regex: `^${escapeRegex(companyName)}$`,
+                $options: 'i',
+              },
+            },
+          ],
+        }
+      : null
+  const legacyCreatorFilter =
+    companyUserIds !== null && hasWorkersInCompany
+      ? {
+          $and: [
+            { created_by: { $in: companyUserIds } },
+            {
+              $or: [
+                { worker_id: { $exists: false } },
+                { worker_id: null },
+              ],
+            },
+            {
+              $or: [
+                { 'worker_snapshot.worker_id': { $exists: false } },
+                { 'worker_snapshot.worker_id': null },
+                { 'worker_snapshot.worker_id': '' },
+              ],
+            },
+          ],
+        }
+      : null
+  const ficha1Filter =
+    legacyCompanyFilter != null || legacyCreatorFilter != null
+      ? {
+          $or: [
+            workerScopedFilter,
+            ...(legacyCompanyFilter ? [legacyCompanyFilter] : []),
+            ...(legacyCreatorFilter ? [legacyCreatorFilter] : []),
+          ],
+        }
+      : workerScopedFilter
+  const ficha2Filter =
+    legacyCreatorFilter != null
+      ? { $or: [workerScopedFilter, legacyCreatorFilter] }
+      : workerScopedFilter
+  const ficha3Filter =
+    legacyCreatorFilter != null
+      ? { $or: [workerScopedFilter, legacyCreatorFilter] }
+      : workerScopedFilter
+  const certFichaFilter =
+    legacyCompanyFilter != null || legacyCreatorFilter != null
+      ? {
+          $or: [
+            workerScopedFilter,
+            ...(legacyCompanyFilter ? [legacyCompanyFilter] : []),
+            ...(legacyCreatorFilter ? [legacyCreatorFilter] : []),
+          ],
+        }
+      : workerScopedFilter
 
-  const [workersCount, recordsCount, certificatesCount, examsCount] =
+  const [
+    workersCount,
+    ficha1Count,
+    ficha2Count,
+    ficha3Count,
+    certFichaCount,
+    certAptitudCount,
+    examsCount,
+  ] =
     await Promise.all([
       Worker.countDocuments({ ...workerFilter, status: 'active' }),
-      MedicalRecord.countDocuments(recordFilter),
-      Certificate.countDocuments(certFilter),
+      FichaMedicaEvaluacion1.countDocuments(ficha1Filter),
+      FichaMedicaEvaluacion2.countDocuments(ficha2Filter),
+      FichaMedicaEvaluacion3.countDocuments(ficha3Filter),
+      CertificadoFichaMedica.countDocuments(certFichaFilter),
+      CertificadoAptitudOficial.countDocuments(workerScopedFilter),
       MedicalExam.countDocuments(examFilter),
     ])
 
-  const thirtyDaysFromNow = new Date()
-  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
-  const now = new Date()
-
-  const expiringCertFilter =
-    workerIds !== null
-      ? {
-          worker_id: { $in: workerIds },
-          expiry_date: { $gte: now, $lte: thirtyDaysFromNow },
-        }
-      : { expiry_date: { $gte: now, $lte: thirtyDaysFromNow } }
-
-  const [expiringCertificates, recentWorkers] = await Promise.all([
-    Certificate.find(expiringCertFilter)
-      .sort({ expiry_date: 1 })
+  const [recentAptitud, recentWorkers] = await Promise.all([
+    CertificadoAptitudOficial.find(workerScopedFilter)
+      .sort({ createdAt: -1 })
       .limit(5)
       .populate('worker_id', 'first_name last_name employee_code')
       .lean(),
@@ -64,17 +161,17 @@ export default async function DashboardPage() {
       color: 'bg-primary/10 text-primary',
     },
     {
-      name: 'Expedientes Médicos',
-      value: recordsCount,
-      icon: FileText,
-      href: '/dashboard/expedientes',
+      name: 'Fichas Médicas',
+      value: ficha1Count + ficha2Count + ficha3Count,
+      icon: ClipboardList,
+      href: '/dashboard/fichas-medicas',
       color: 'bg-accent/10 text-accent',
     },
     {
-      name: 'Constancias Emitidas',
-      value: certificatesCount,
-      icon: Award,
-      href: '/dashboard/constancias',
+      name: 'Certificados Emitidos',
+      value: certFichaCount + certAptitudCount,
+      icon: FileCheck,
+      href: '/dashboard/certificado-aptitud-oficial',
       color: 'bg-chart-4/20 text-chart-4',
     },
     {
@@ -121,17 +218,17 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-warning" />
-              <CardTitle>Constancias por Vencer</CardTitle>
+              <Activity className="h-5 w-5 text-warning" />
+              <CardTitle>Actividad Reciente de Certificados</CardTitle>
             </div>
             <CardDescription>
-              Constancias que vencen en los próximos 30 días
+              Últimos certificados de aptitud oficial generados
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {expiringCertificates && expiringCertificates.length > 0 ? (
+            {recentAptitud && recentAptitud.length > 0 ? (
               <div className="space-y-3">
-                {expiringCertificates.map((cert: { _id: string; expiry_date: Date; worker_id: { first_name: string; last_name: string; employee_code: string } }) => (
+                {recentAptitud.map((cert: { _id: string; createdAt: Date; worker_id: { first_name: string; last_name: string; employee_code: string } }) => (
                   <div
                     key={String(cert._id)}
                     className="flex items-center justify-between rounded-lg border border-border p-3"
@@ -146,8 +243,8 @@ export default async function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-warning">
-                        Vence:{' '}
-                        {new Date(cert.expiry_date).toLocaleDateString('es-MX')}
+                        Creado:{' '}
+                        {new Date(cert.createdAt).toLocaleDateString('es-MX')}
                       </p>
                     </div>
                   </div>
@@ -157,7 +254,7 @@ export default async function DashboardPage() {
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <CheckCircle className="h-10 w-10 text-accent mb-2" />
                 <p className="text-muted-foreground">
-                  No hay constancias por vencer próximamente
+                  No hay certificados recientes
                 </p>
               </div>
             )}

@@ -63,45 +63,6 @@ export interface WorkerSnapshot {
   puesto_trabajo_ciuo: string | null
 }
 
-export interface MedicalRecord {
-  id: string
-  worker_id: string
-  record_date: string
-  medical_history: string | null
-  family_history: string | null
-  allergies: string | null
-  current_medications: string | null
-  blood_type: string | null
-  height_cm: number | null
-  weight_kg: number | null
-  blood_pressure: string | null
-  heart_rate: number | null
-  observations: string | null
-  created_at: string
-  updated_at: string
-  created_by: string | null
-  worker?: Worker
-}
-
-export interface Certificate {
-  id: string
-  worker_id: string
-  certificate_type: 'ingreso' | 'periodico' | 'egreso' | 'especial'
-  issue_date: string
-  expiry_date: string | null
-  result: 'apto' | 'apto_con_restricciones' | 'no_apto' | 'pendiente'
-  restrictions: string | null
-  recommendations: string | null
-  doctor_name: string | null
-  doctor_license: string | null
-  observations: string | null
-  pdf_url: string | null
-  created_at: string
-  updated_at: string
-  created_by: string | null
-  worker?: Worker
-}
-
 export interface MedicalExam {
   id: string
   worker_id: string
@@ -111,6 +72,8 @@ export interface MedicalExam {
   results: string | null
   file_url: string | null
   file_name: string | null
+  consentimiento_informado_url: string | null
+  consentimiento_informado_name: string | null
   observations: string | null
   created_at: string
   updated_at: string
@@ -118,37 +81,9 @@ export interface MedicalExam {
   worker?: Worker
 }
 
-export type CertificateTypeLabel = {
-  [key in Certificate['certificate_type']]: string
-}
-
-export type CertificateResultLabel = {
-  [key in Certificate['result']]: string
-}
-
-export const CERTIFICATE_TYPE_LABELS: CertificateTypeLabel = {
-  ingreso: 'Ingreso',
-  periodico: 'Periódico',
-  egreso: 'Egreso',
-  especial: 'Especial'
-}
-
-export const CERTIFICATE_RESULT_LABELS: CertificateResultLabel = {
-  apto: 'Apto',
-  apto_con_restricciones: 'Apto con Restricciones',
-  no_apto: 'No Apto',
-  pendiente: 'Pendiente'
-}
-
 export const EXAM_TYPES = [
+  'Audiometría',
+  'Radiografía',
   'Biometría Hemática',
   'Química Sanguínea',
-  'Examen General de Orina',
-  'Audiometría',
-  'Espirometría',
-  'Electrocardiograma',
-  'Rayos X de Tórax',
-  'Examen de Vista',
-  'Prueba de Drogas',
-  'Otro'
 ] as const

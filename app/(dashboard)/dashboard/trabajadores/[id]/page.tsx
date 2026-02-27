@@ -1,5 +1,13 @@
 import { connectDB } from '@/lib/db'
-import { Worker, MedicalRecord, Certificate, MedicalExam } from '@/lib/models'
+import {
+  Worker,
+  FichaMedicaEvaluacion1,
+  FichaMedicaEvaluacion2,
+  FichaMedicaEvaluacion3,
+  CertificadoFichaMedica,
+  CertificadoAptitudOficial,
+  MedicalExam,
+} from '@/lib/models'
 import { notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -10,18 +18,31 @@ import {
   Phone,
   Mail,
   MapPin,
-  FileText,
-  Award,
+  ClipboardList,
+  FileCheck,
   TestTube,
   Edit,
   ArrowLeft,
 } from 'lucide-react'
 import Link from 'next/link'
-import type { Worker as WorkerType, MedicalRecord as MRType, Certificate as CertType, MedicalExam as ExamType } from '@/lib/types'
-import { CERTIFICATE_TYPE_LABELS } from '@/lib/types'
 
-function norm(d: { _id: unknown; [k: string]: unknown }) {
-  return { ...d, id: String(d._id) }
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function formatDateOnlyEsMx(value: unknown): string {
+  if (!value) return '-'
+  const raw =
+    typeof value === 'string'
+      ? value
+      : value instanceof Date
+        ? value.toISOString()
+        : String(value)
+
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (!match) return '-'
+  const [, y, m, d] = match
+  return `${d}/${m}/${y}`
 }
 
 export default async function TrabajadorDetailPage({
@@ -32,34 +53,144 @@ export default async function TrabajadorDetailPage({
   const { id } = await params
   await connectDB()
 
-  const worker = await Worker.findById(id)
-    .populate('company_id', 'name')
-    .lean()
+  const worker = await Worker.findById(id).populate('company_id', 'name').lean()
   if (!worker) notFound()
+  const w = worker as Record<string, unknown>
+  const companyId = ((w.company_id as { _id?: unknown } | null)?._id ?? w.company_id) as
+    | string
+    | { toString?: () => string }
+    | null
+  const companyName = ((w.company_id as { name?: string } | null)?.name ?? '') as string
+  const workerIdFilter = {
+    $or: [{ worker_id: id }, { 'worker_snapshot.worker_id': id }],
+  }
+  const companyWorkersCount =
+    companyId != null ? await Worker.countDocuments({ company_id: companyId }) : 0
+  const legacyByCreatorForSingleWorker =
+    companyWorkersCount === 1 && w.created_by
+      ? {
+          $and: [
+            { created_by: w.created_by },
+            {
+              $or: [{ worker_id: { $exists: false } }, { worker_id: null }],
+            },
+            {
+              $or: [
+                { 'worker_snapshot.worker_id': { $exists: false } },
+                { 'worker_snapshot.worker_id': null },
+              ],
+            },
+          ],
+        }
+      : null
 
-  const [records, certificates, exams] = await Promise.all([
-    MedicalRecord.find({ worker_id: id })
-      .sort({ record_date: -1 })
-      .limit(3)
-      .lean(),
-    Certificate.find({ worker_id: id })
-      .sort({ issue_date: -1 })
-      .limit(3)
-      .lean(),
-    MedicalExam.find({ worker_id: id })
-      .sort({ exam_date: -1 })
-      .limit(3)
-      .lean(),
+  const firstName = String(w.first_name ?? '').trim()
+  const lastName = String(w.last_name ?? '').trim()
+  const firstParts = firstName.split(/\s+/).filter(Boolean)
+  const lastParts = lastName.split(/\s+/).filter(Boolean)
+  const primerNombre = String(w.primer_nombre ?? firstParts[0] ?? '').trim()
+  const segundoNombre = String(w.segundo_nombre ?? firstParts.slice(1).join(' ') ?? '').trim()
+  const primerApellido = String(w.primer_apellido ?? lastParts[0] ?? '').trim()
+  const segundoApellido = String(w.segundo_apellido ?? lastParts.slice(1).join(' ') ?? '').trim()
+
+  const legacyByUserAndCompany =
+    companyName && primerNombre && primerApellido
+      ? {
+          $and: [
+            {
+              $or: [
+                {
+                  'seccionA.establecimiento.institucion_sistema': {
+                    $regex: `^${escapeRegex(companyName)}$`,
+                    $options: 'i',
+                  },
+                },
+                {
+                  'seccionA.institucion_sistema': {
+                    $regex: `^${escapeRegex(companyName)}$`,
+                    $options: 'i',
+                  },
+                },
+              ],
+            },
+            {
+              'seccionA.usuario.primer_nombre': {
+                $regex: `^${escapeRegex(primerNombre)}$`,
+                $options: 'i',
+              },
+            },
+            {
+              'seccionA.usuario.primer_apellido': {
+                $regex: `^${escapeRegex(primerApellido)}$`,
+                $options: 'i',
+              },
+            },
+            ...(segundoNombre
+              ? [
+                  {
+                    'seccionA.usuario.segundo_nombre': {
+                      $regex: `^${escapeRegex(segundoNombre)}$`,
+                      $options: 'i',
+                    },
+                  },
+                ]
+              : []),
+            ...(segundoApellido
+              ? [
+                  {
+                    'seccionA.usuario.segundo_apellido': {
+                      $regex: `^${escapeRegex(segundoApellido)}$`,
+                      $options: 'i',
+                    },
+                  },
+                ]
+              : []),
+          ],
+        }
+      : null
+
+  const ficha1Filter = {
+    $or: [
+      workerIdFilter,
+      ...(legacyByUserAndCompany ? [legacyByUserAndCompany] : []),
+      ...(legacyByCreatorForSingleWorker ? [legacyByCreatorForSingleWorker] : []),
+    ],
+  }
+  const ficha2Filter = {
+    $or: [workerIdFilter, ...(legacyByCreatorForSingleWorker ? [legacyByCreatorForSingleWorker] : [])],
+  }
+  const ficha3Filter = {
+    $or: [workerIdFilter, ...(legacyByCreatorForSingleWorker ? [legacyByCreatorForSingleWorker] : [])],
+  }
+  const certFichaFilter = {
+    $or: [
+      workerIdFilter,
+      ...(legacyByUserAndCompany ? [legacyByUserAndCompany] : []),
+      ...(legacyByCreatorForSingleWorker ? [legacyByCreatorForSingleWorker] : []),
+    ],
+  }
+  const certAptitudFilter = {
+    $or: [workerIdFilter, ...(legacyByCreatorForSingleWorker ? [legacyByCreatorForSingleWorker] : [])],
+  }
+  const examFilter = {
+    $or: [{ worker_id: id }, ...(legacyByCreatorForSingleWorker ? [legacyByCreatorForSingleWorker] : [])],
+  }
+
+  const [ficha1, ficha2, ficha3, certFicha, certAptitud, exams] = await Promise.all([
+    FichaMedicaEvaluacion1.find(ficha1Filter).sort({ createdAt: -1 }).limit(3).lean(),
+    FichaMedicaEvaluacion2.find(ficha2Filter).sort({ createdAt: -1 }).limit(3).lean(),
+    FichaMedicaEvaluacion3.find(ficha3Filter).sort({ createdAt: -1 }).limit(3).lean(),
+    CertificadoFichaMedica.find(certFichaFilter).sort({ createdAt: -1 }).limit(3).lean(),
+    CertificadoAptitudOficial.find(certAptitudFilter).sort({ createdAt: -1 }).limit(3).lean(),
+    MedicalExam.find(examFilter).sort({ exam_date: -1 }).limit(3).lean(),
   ])
 
-  const workerNorm = norm(worker as { _id: unknown; [k: string]: unknown }) as WorkerType & {
-    company?: { name: string }
-  }
-  workerNorm.company = (worker as { company_id?: { name: string } }).company_id
-    ? { name: (worker as { company_id: { name: string } }).company_id.name }
-    : undefined
+  const companyNameLabel = companyName || '-'
+  const firstNameLabel = String(w.first_name ?? '')
+  const lastNameLabel = String(w.last_name ?? '')
+  const status = (w.status ?? 'active') as 'active' | 'inactive' | 'terminated'
 
-  const getStatusBadge = (status: WorkerType['status']) => {
+  const getStatusBadge = () => {
     switch (status) {
       case 'active':
         return <Badge className="bg-accent text-accent-foreground">Activo</Badge>
@@ -72,25 +203,6 @@ export default async function TrabajadorDetailPage({
     }
   }
 
-  const getResultBadge = (result: CertType['result']) => {
-    switch (result) {
-      case 'apto':
-        return <Badge className="bg-accent text-accent-foreground">Apto</Badge>
-      case 'apto_con_restricciones':
-        return <Badge className="bg-warning text-warning-foreground">Con Restricciones</Badge>
-      case 'no_apto':
-        return <Badge variant="destructive">No Apto</Badge>
-      case 'pendiente':
-        return <Badge variant="secondary">Pendiente</Badge>
-      default:
-        return null
-    }
-  }
-
-  const recordsNorm = records.map((r) => norm(r as { _id: unknown; [k: string]: unknown }) as MRType)
-  const certsNorm = certificates.map((c) => norm(c as { _id: unknown; [k: string]: unknown }) as CertType)
-  const examsNorm = exams.map((e) => norm(e as { _id: unknown; [k: string]: unknown }) as ExamType)
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -102,15 +214,15 @@ export default async function TrabajadorDetailPage({
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              {workerNorm.first_name} {workerNorm.last_name}
+              {firstNameLabel} {lastNameLabel}
             </h1>
             <p className="text-muted-foreground">
-              {workerNorm.employee_code} - {workerNorm.company?.name}
+              {String(w.employee_code ?? '')} - {companyNameLabel}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {getStatusBadge(workerNorm.status)}
+          {getStatusBadge()}
           <Link href={`/dashboard/trabajadores/${id}/editar`}>
             <Button variant="outline">
               <Edit className="mr-2 h-4 w-4" />
@@ -131,34 +243,24 @@ export default async function TrabajadorDetailPage({
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">CURP</p>
-                <p className="font-medium font-mono">{workerNorm.curp || '-'}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">RFC</p>
-                <p className="font-medium font-mono">{workerNorm.rfc || '-'}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">NSS (IMSS)</p>
-                <p className="font-medium font-mono">{workerNorm.nss || '-'}</p>
-              </div>
-              <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Fecha de Nacimiento</p>
                 <p className="font-medium">
-                  {workerNorm.birth_date
-                    ? new Date(workerNorm.birth_date as string).toLocaleDateString('es-MX')
-                    : '-'}
+                  {formatDateOnlyEsMx(w.birth_date)}
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Género</p>
+                <p className="text-sm text-muted-foreground">Sexo</p>
                 <p className="font-medium">
-                  {workerNorm.gender === 'M'
-                    ? 'Masculino'
-                    : workerNorm.gender === 'F'
-                      ? 'Femenino'
-                      : workerNorm.gender || '-'}
+                  {w.sexo === 'hombre' ? 'Hombre' : w.sexo === 'mujer' ? 'Mujer' : '-'}
                 </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Grupo Sanguíneo</p>
+                <p className="font-medium">{String(w.grupo_sanguineo ?? w.blood_type ?? '-')}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Lateralidad</p>
+                <p className="font-medium">{String(w.lateralidad ?? '-')}</p>
               </div>
             </div>
           </CardContent>
@@ -169,22 +271,22 @@ export default async function TrabajadorDetailPage({
             <CardTitle>Contacto</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {workerNorm.phone && (
+            {w.phone && (
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{workerNorm.phone}</span>
+                <span>{String(w.phone)}</span>
               </div>
             )}
-            {workerNorm.email && (
+            {w.email && (
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{workerNorm.email}</span>
+                <span>{String(w.email)}</span>
               </div>
             )}
-            {workerNorm.address && (
+            {w.address && (
               <div className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                <span>{workerNorm.address}</span>
+                <span>{String(w.address)}</span>
               </div>
             )}
           </CardContent>
@@ -200,19 +302,15 @@ export default async function TrabajadorDetailPage({
           <CardContent className="space-y-4">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Departamento</p>
-              <p className="font-medium">{workerNorm.department || '-'}</p>
+              <p className="font-medium">{String(w.department ?? '-')}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Puesto</p>
-              <p className="font-medium">{workerNorm.position || '-'}</p>
+              <p className="text-sm text-muted-foreground">Cargo / Ocupación</p>
+              <p className="font-medium">{String(w.position ?? '-')}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Fecha de Ingreso</p>
-              <p className="font-medium">
-                {workerNorm.hire_date
-                  ? new Date(workerNorm.hire_date as string).toLocaleDateString('es-MX')
-                  : '-'}
-              </p>
+              <p className="text-sm text-muted-foreground">Puesto CIUO</p>
+              <p className="font-medium">{String(w.puesto_trabajo_ciuo ?? '-')}</p>
             </div>
           </CardContent>
         </Card>
@@ -220,84 +318,78 @@ export default async function TrabajadorDetailPage({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Expedientes
+              <ClipboardList className="h-5 w-5" />
+              Fichas Médicas
             </CardTitle>
-            <Link href={`/dashboard/expedientes/nuevo?trabajador=${id}`}>
+            <Link href={`/dashboard/fichas-medicas/evaluacion-1-3/nuevo?trabajador=${id}`}>
               <Button size="sm" variant="outline">
-                Nuevo
+                Nueva 1-3
               </Button>
             </Link>
           </CardHeader>
-          <CardContent>
-            {recordsNorm.length > 0 ? (
-              <div className="space-y-3">
-                {recordsNorm.map((record) => (
-                  <div
-                    key={record.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-3"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">
-                        {new Date(record.record_date as string).toLocaleDateString('es-MX')}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Tipo: {record.blood_type || 'N/A'}
-                      </p>
-                    </div>
-                    <Link href={`/dashboard/expedientes/${record.id}`}>
-                      <Button size="sm" variant="ghost">
-                        Ver
-                      </Button>
-                    </Link>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-sm text-muted-foreground py-4">
-                Sin expedientes
-              </p>
-            )}
+          <CardContent className="space-y-4 text-sm">
+            <p>1-3: {ficha1.length} registro(s)</p>
+            <p>2-3: {ficha2.length} registro(s)</p>
+            <p>3-3: {ficha3.length} registro(s)</p>
+            <div className="flex gap-2">
+              {ficha1[0] && (
+                <Link href={`/dashboard/fichas-medicas/evaluacion-1-3/${String((ficha1[0] as { _id: unknown })._id)}/imprimir`}>
+                  <Button size="sm" variant="ghost">Ver última 1-3</Button>
+                </Link>
+              )}
+              {ficha2[0] && (
+                <Link href={`/dashboard/fichas-medicas/evaluacion-2-3/${String((ficha2[0] as { _id: unknown })._id)}/imprimir`}>
+                  <Button size="sm" variant="ghost">Ver última 2-3</Button>
+                </Link>
+              )}
+              {ficha3[0] && (
+                <Link href={`/dashboard/fichas-medicas/evaluacion-3-3/${String((ficha3[0] as { _id: unknown })._id)}/imprimir`}>
+                  <Button size="sm" variant="ghost">Ver última 3-3</Button>
+                </Link>
+              )}
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5" />
-              Constancias
+              <FileCheck className="h-5 w-5" />
+              Certificados
             </CardTitle>
-            <Link href={`/dashboard/constancias/nueva?trabajador=${id}`}>
+            <Link href={`/dashboard/certificado-aptitud-oficial/nuevo?trabajador=${id}`}>
               <Button size="sm" variant="outline">
-                Nueva
+                Nuevo aptitud
               </Button>
             </Link>
           </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            <p>Cert. ficha médica: {certFicha.length} registro(s)</p>
+            <p>Cert. aptitud oficial: {certAptitud.length} registro(s)</p>
+            <div className="flex gap-2">
+              {certFicha[0] && (
+                <Link href={`/dashboard/fichas-medicas/certificado/${String((certFicha[0] as { _id: unknown })._id)}/imprimir`}>
+                  <Button size="sm" variant="ghost">Ver último cert. ficha</Button>
+                </Link>
+              )}
+              {certAptitud[0] && (
+                <Link href={`/dashboard/certificado-aptitud-oficial/${String((certAptitud[0] as { _id: unknown })._id)}/imprimir`}>
+                  <Button size="sm" variant="ghost">Ver último cert. aptitud</Button>
+                </Link>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <TestTube className="h-5 w-5" />
+              Exámenes
+            </CardTitle>
+          </CardHeader>
           <CardContent>
-            {certsNorm.length > 0 ? (
-              <div className="space-y-3">
-                {certsNorm.map((cert) => (
-                  <div
-                    key={cert.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-3"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">
-                        {CERTIFICATE_TYPE_LABELS[cert.certificate_type]}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(cert.issue_date as string).toLocaleDateString('es-MX')}
-                      </p>
-                    </div>
-                    {getResultBadge(cert.result)}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-sm text-muted-foreground py-4">
-                Sin constancias
-              </p>
-            )}
+            <p className="text-sm text-muted-foreground">Últimos exámenes registrados: {exams.length}</p>
           </CardContent>
         </Card>
       </div>

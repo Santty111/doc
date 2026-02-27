@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -46,8 +46,13 @@ function normalizeLateralidad(value: string | null | undefined): string {
 
 export function WorkerForm({ companies, worker }: WorkerFormProps) {
   const router = useRouter()
+  const [isMounted, setIsMounted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const legacyFirstName = worker?.first_name?.trim() || ''
   const legacyLastName = worker?.last_name?.trim() || ''
@@ -134,6 +139,16 @@ export function WorkerForm({ companies, worker }: WorkerFormProps) {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!isMounted) {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+          Cargando formulario...
+        </div>
+      </div>
+    )
   }
 
   return (

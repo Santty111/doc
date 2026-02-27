@@ -1,7 +1,8 @@
 'use client'
 
-import { Bell, Search, Award } from 'lucide-react'
+import { Bell, Search, FileCheck } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -23,36 +24,47 @@ interface NotificationItem {
   id: string
   workerName: string
   employeeCode: string
-  expiry_date: string
+  created_at: string
 }
 
 export function DashboardHeader({ profile }: HeaderProps) {
+  const router = useRouter()
+  const [search, setSearch] = useState('')
   const [notifications, setNotifications] = useState<{
-    expiringCertificates: NotificationItem[]
+    recentCertificates: NotificationItem[]
     count: number
   } | null>(null)
 
   useEffect(() => {
     fetch('/api/notifications')
-      .then((res) => (res.ok ? res.json() : { expiringCertificates: [], count: 0 }))
+      .then((res) => (res.ok ? res.json() : { recentCertificates: [], count: 0 }))
       .then((data) => setNotifications(data))
-      .catch(() => setNotifications({ expiringCertificates: [], count: 0 }))
+      .catch(() => setNotifications({ recentCertificates: [], count: 0 }))
   }, [])
 
   const count = notifications?.count ?? 0
-  const items = notifications?.expiringCertificates ?? []
+  const items = notifications?.recentCertificates ?? []
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    const q = search.trim()
+    if (!q) return
+    router.push(`/dashboard/busqueda?q=${encodeURIComponent(q)}`)
+  }
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6">
       <div className="flex items-center gap-4">
-        <div className="relative">
+        <form className="relative" onSubmit={handleSearch}>
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Buscar trabajadores, expedientes..."
+            placeholder="Buscar trabajadores, fichas, certificados..."
             className="w-80 pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
+        </form>
       </div>
       <div className="flex items-center gap-4">
         {profile.company && (
@@ -71,25 +83,25 @@ export function DashboardHeader({ profile }: HeaderProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel className="flex items-center gap-2">
-              <Award className="h-4 w-4" />
+              <FileCheck className="h-4 w-4" />
               Notificaciones
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             {count === 0 ? (
               <div className="px-2 py-3 text-sm text-muted-foreground">
-                No hay constancias por vencer en los próximos 30 días
+                No hay certificados recientes en los últimos 30 días
               </div>
             ) : (
               <>
                 {items.map((item) => (
                   <DropdownMenuItem key={item.id} asChild>
                     <Link
-                      href={`/dashboard/constancias/${item.id}`}
+                      href={`/dashboard/certificado-aptitud-oficial/${item.id}/imprimir`}
                       className="flex flex-col items-start gap-0.5 py-2"
                     >
                       <span className="font-medium">{item.workerName || 'Sin nombre'}</span>
                       <span className="text-xs text-muted-foreground">
-                        Vence: {new Date(item.expiry_date).toLocaleDateString('es-MX')}
+                        Creado: {new Date(item.created_at).toLocaleDateString('es-MX')}
                       </span>
                     </Link>
                   </DropdownMenuItem>

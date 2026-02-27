@@ -177,6 +177,14 @@ export function ExamsTable({ exams, workers }: ExamsTableProps) {
                             </a>
                           </DropdownMenuItem>
                         )}
+                        {exam.consentimiento_informado_url && (
+                          <DropdownMenuItem asChild>
+                            <a href={exam.consentimiento_informado_url} download>
+                              <FileDown className="mr-2 h-4 w-4" />
+                              Descargar consentimiento
+                            </a>
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

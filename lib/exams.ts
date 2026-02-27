@@ -40,6 +40,10 @@ export function toPlainExam(e: RawExam): MedicalExam {
     results: (e.results as string) ?? null,
     file_url: (e.file_url as string) ?? null,
     file_name: (e.file_name as string) ?? null,
+    consentimiento_informado_url:
+      (e.consentimiento_informado_url as string) ?? null,
+    consentimiento_informado_name:
+      (e.consentimiento_informado_name as string) ?? null,
     observations: (e.observations as string) ?? null,
     created_at: toDateStr(e.createdAt) ?? toStr(e.createdAt),
     updated_at: toDateStr(e.updatedAt) ?? toStr(e.updatedAt),

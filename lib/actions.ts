@@ -6,8 +6,6 @@ import { authOptions } from '@/lib/auth'
 import { connectDB } from '@/lib/db'
 import {
   Worker,
-  MedicalRecord,
-  Certificate,
   MedicalExam,
   CertificadoAptitudOficial,
   CertificadoFichaMedica,
@@ -52,58 +50,6 @@ export async function updateWorker(id: string, formData: Record<string, unknown>
   await Worker.findByIdAndUpdate(id, data)
   revalidatePath('/dashboard/trabajadores')
   revalidatePath(`/dashboard/trabajadores/${id}`)
-  revalidatePath('/dashboard')
-}
-
-export async function createMedicalRecord(formData: Record<string, unknown>) {
-  const userId = await getUserId()
-  if (!userId) throw new Error('No autorizado')
-  await connectDB()
-  await MedicalRecord.create({
-    ...formData,
-    created_by: userId,
-  })
-  revalidatePath('/dashboard/expedientes')
-  revalidatePath('/dashboard')
-}
-
-export async function updateMedicalRecord(
-  id: string,
-  formData: Record<string, unknown>
-) {
-  const userId = await getUserId()
-  if (!userId) throw new Error('No autorizado')
-  await connectDB()
-  await MedicalRecord.findByIdAndUpdate(id, formData)
-  revalidatePath('/dashboard/expedientes')
-  revalidatePath('/dashboard')
-}
-
-export async function createCertificate(formData: Record<string, unknown>) {
-  const userId = await getUserId()
-  if (!userId) throw new Error('No autorizado')
-  await connectDB()
-  await Certificate.create({
-    ...formData,
-    expiry_date: formData.expiry_date || null,
-    created_by: userId,
-  })
-  revalidatePath('/dashboard/constancias')
-  revalidatePath('/dashboard')
-}
-
-export async function updateCertificate(
-  id: string,
-  formData: Record<string, unknown>
-) {
-  const userId = await getUserId()
-  if (!userId) throw new Error('No autorizado')
-  await connectDB()
-  await Certificate.findByIdAndUpdate(id, {
-    ...formData,
-    expiry_date: formData.expiry_date || null,
-  })
-  revalidatePath('/dashboard/constancias')
   revalidatePath('/dashboard')
 }
 

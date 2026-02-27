@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreHorizontal, Search, Eye, Edit, FileText, Award } from 'lucide-react'
+import { MoreHorizontal, Search, Eye, Edit, ClipboardList, FileCheck } from 'lucide-react'
 import Link from 'next/link'
 import type { Worker } from '@/lib/types'
 
@@ -136,15 +136,15 @@ export function WorkersTable({ workers }: WorkersTableProps) {
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/dashboard/expedientes?trabajador=${worker.id}`}>
-                            <FileText className="mr-2 h-4 w-4" />
-                            Ver expediente
+                          <Link href={`/dashboard/fichas-medicas/evaluacion-1-3/nuevo?trabajador=${worker.id}`}>
+                            <ClipboardList className="mr-2 h-4 w-4" />
+                            Nueva ficha 1-3
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/dashboard/constancias/nueva?trabajador=${worker.id}`}>
-                            <Award className="mr-2 h-4 w-4" />
-                            Nueva constancia
+                          <Link href={`/dashboard/certificado-aptitud-oficial/nuevo?trabajador=${worker.id}`}>
+                            <FileCheck className="mr-2 h-4 w-4" />
+                            Nuevo cert. aptitud
                           </Link>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
