@@ -3,6 +3,21 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createFichaMedicaEvaluacion1 } from '@/lib/actions'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { FichaEva1SeccionA } from './FichaEva1SeccionA'
 import { FichaEva1SeccionB } from './FichaEva1SeccionB'
 import { FichaEva1SeccionC } from './FichaEva1SeccionC'
@@ -17,10 +32,29 @@ import type {
   FichaEva1SeccionE as FichaEva1SeccionEType,
   FichaEva1SeccionF as FichaEva1SeccionFType,
 } from '@/lib/types/ficha-medica-evaluacion-1'
+import { FICHA_EVA1_SECCION_B_DEFAULTS } from '@/lib/types/ficha-medica-evaluacion-1'
 
 type SeccionActual = 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
+interface WorkerOption {
+  id: string
+  primer_nombre: string
+  segundo_nombre: string
+  primer_apellido: string
+  segundo_apellido: string
+  sexo: 'hombre' | 'mujer' | null
+  fecha_nacimiento: string | null
+  edad: number | null
+  grupo_sanguineo: string | null
+  lateralidad: 'diestro' | 'zurdo' | 'ambidiestro' | null
+  cargo_ocupacion: string | null
+  puesto_trabajo_ciuo: string | null
+  institucion_sistema: string | null
+}
 
-const SECCION_LABELS: Record<SeccionActual, string> = {
+type Step = 'WORKER' | SeccionActual
+
+const SECCION_LABELS: Record<Step, string> = {
+  WORKER: 'Selección de trabajador',
   A: 'A. Datos del Establecimiento - Datos del Usuario',
   B: 'B. Motivo de Consulta',
   C: 'C. Antecedentes Personales',
@@ -29,17 +63,85 @@ const SECCION_LABELS: Record<SeccionActual, string> = {
   F: 'F. Examen Físico Regional',
 }
 
-export function FichaEva1Flow() {
+interface FichaEva1FlowProps {
+  workers: WorkerOption[]
+  defaultWorkerId?: string
+}
+
+function buildWorkerDisplayName(worker: WorkerOption) {
+  return [
+    worker.primer_apellido,
+    worker.segundo_apellido,
+    worker.primer_nombre,
+    worker.segundo_nombre,
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+function buildSeccionAFromWorker(worker: WorkerOption): FichaEva1SeccionAType {
+  return {
+    establecimiento: {
+      institucion_sistema: worker.institucion_sistema ?? '',
+      ruc: '',
+      ciiu: '',
+      establecimiento_centro_trabajo: '',
+      numero_historia_clinica: '',
+      numero_archivo: '',
+    },
+    usuario: {
+      primer_apellido: worker.primer_apellido || '',
+      segundo_apellido: worker.segundo_apellido || '',
+      primer_nombre: worker.primer_nombre || '',
+      segundo_nombre: worker.segundo_nombre || '',
+    },
+    atencion_prioritaria: {
+      embarazada: false,
+      persona_discapacidad: false,
+      enfermedad_catastrofica: false,
+      lactancia: false,
+      adulto_mayor: false,
+    },
+    sexo: worker.sexo ?? 'hombre',
+    fecha_nacimiento: worker.fecha_nacimiento ?? '',
+    edad: worker.edad,
+    grupo_sanguineo: worker.grupo_sanguineo ?? '',
+    lateralidad: worker.lateralidad ?? 'diestro',
+  }
+}
+
+function buildSeccionBFromWorker(worker: WorkerOption): FichaEva1SeccionBType {
+  return {
+    ...FICHA_EVA1_SECCION_B_DEFAULTS,
+    puesto_trabajo_ciuo: worker.puesto_trabajo_ciuo ?? '',
+  }
+}
+
+export function FichaEva1Flow({ workers, defaultWorkerId }: FichaEva1FlowProps) {
+  const initialWorkerId =
+    defaultWorkerId && workers.some((worker) => worker.id === defaultWorkerId)
+      ? defaultWorkerId
+      : ''
+  const initialWorker = workers.find((worker) => worker.id === initialWorkerId)
   const router = useRouter()
-  const [seccionActual, setSeccionActual] = useState<SeccionActual>('A')
-  const [seccionA, setSeccionA] = useState<FichaEva1SeccionAType | null>(null)
-  const [seccionB, setSeccionB] = useState<FichaEva1SeccionBType | null>(null)
+  const [seccionActual, setSeccionActual] = useState<Step>(
+    initialWorker ? 'A' : 'WORKER'
+  )
+  const [workerId, setWorkerId] = useState(initialWorkerId)
+  const [seccionA, setSeccionA] = useState<FichaEva1SeccionAType | null>(
+    initialWorker ? buildSeccionAFromWorker(initialWorker) : null
+  )
+  const [seccionB, setSeccionB] = useState<FichaEva1SeccionBType | null>(
+    initialWorker ? buildSeccionBFromWorker(initialWorker) : null
+  )
   const [seccionC, setSeccionC] = useState<FichaEva1SeccionCType | null>(null)
   const [seccionD, setSeccionD] = useState<FichaEva1SeccionDType | null>(null)
   const [seccionE, setSeccionE] = useState<FichaEva1SeccionEType | null>(null)
   const [seccionF, setSeccionF] = useState<FichaEva1SeccionFType | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const selectedWorker = workers.find((worker) => worker.id === workerId)
 
   return (
     <div className="space-y-6">
@@ -56,6 +158,48 @@ export function FichaEva1Flow() {
         <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
           {error}
         </div>
+      )}
+
+      {seccionActual === 'WORKER' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Trabajador</CardTitle>
+            <CardDescription>
+              Selecciona el trabajador para autocompletar los datos base de la ficha.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Select value={workerId} onValueChange={setWorkerId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un trabajador" />
+              </SelectTrigger>
+              <SelectContent>
+                {workers.map((worker) => (
+                  <SelectItem key={worker.id} value={worker.id}>
+                    {buildWorkerDisplayName(worker)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                onClick={() => {
+                  if (!selectedWorker) {
+                    setError('Debes seleccionar un trabajador')
+                    return
+                  }
+                  setError(null)
+                  setSeccionA(buildSeccionAFromWorker(selectedWorker))
+                  setSeccionB(buildSeccionBFromWorker(selectedWorker))
+                  setSeccionActual('A')
+                }}
+              >
+                Continuar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {seccionActual === 'A' && (
@@ -137,7 +281,12 @@ export function FichaEva1Flow() {
             setError(null)
             setSaving(true)
             try {
+              if (!workerId) {
+                setError('Debes seleccionar un trabajador')
+                return
+              }
               const { id } = await createFichaMedicaEvaluacion1({
+                worker_id: workerId,
                 seccionA,
                 seccionB,
                 seccionC,

@@ -3,6 +3,21 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createFichaMedicaEvaluacion2 } from '@/lib/actions'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { FichaEva2SeccionGFisicos } from './FichaEva2SeccionGFisicos'
 import { FichaEva2SeccionGSeguridad } from './FichaEva2SeccionGSeguridad'
 import { FichaEva2SeccionGQuimicos } from './FichaEva2SeccionGQuimicos'
@@ -17,10 +32,23 @@ import type { FichaEva2SeccionGBiologicos as FichaEva2SeccionGBiologicosType } f
 import type { FichaEva2SeccionGErgonomicos as FichaEva2SeccionGErgonomicosType } from '@/lib/types/ficha-medica-evaluacion-2'
 import type { FichaEva2SeccionGPsicosociales as FichaEva2SeccionGPsicosocialesType } from '@/lib/types/ficha-medica-evaluacion-2'
 import type { FichaEva2MedidasPreventivas as FichaEva2MedidasPreventivasType } from '@/lib/types/ficha-medica-evaluacion-2'
+import { FICHA_EVA2_SECCION_G_FISICOS_DEFAULTS } from '@/lib/types/ficha-medica-evaluacion-2'
 
 type Step = 'fisicos' | 'seguridad' | 'quimicos' | 'biologicos' | 'ergonomicos' | 'psicosociales' | 'medidas_preventivas'
+interface WorkerOption {
+  id: string
+  primer_nombre: string
+  segundo_nombre: string
+  primer_apellido: string
+  segundo_apellido: string
+  puesto_trabajo_ciuo: string | null
+  cargo_ocupacion: string | null
+}
 
-const STEP_LABELS: Record<Step, string> = {
+type FlowStep = 'worker' | Step
+
+const STEP_LABELS: Record<FlowStep, string> = {
+  worker: 'Selección de trabajador',
   fisicos: 'G. Factores de Riesgo — FÍSICOS',
   seguridad: 'G. Factores de Riesgo — DE SEGURIDAD',
   quimicos: 'G. Factores de Riesgo — QUÍMICOS',
@@ -30,11 +58,43 @@ const STEP_LABELS: Record<Step, string> = {
   medidas_preventivas: 'Medidas preventivas',
 }
 
-export function FichaEva2Flow() {
+interface FichaEva2FlowProps {
+  workers: WorkerOption[]
+  defaultWorkerId?: string
+}
+
+function getWorkerLabel(worker: WorkerOption) {
+  return [
+    worker.primer_apellido,
+    worker.segundo_apellido,
+    worker.primer_nombre,
+    worker.segundo_nombre,
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+export function FichaEva2Flow({ workers, defaultWorkerId }: FichaEva2FlowProps) {
+  const initialWorkerId =
+    defaultWorkerId && workers.some((worker) => worker.id === defaultWorkerId)
+      ? defaultWorkerId
+      : ''
+  const initialWorker = workers.find((worker) => worker.id === initialWorkerId)
   const router = useRouter()
-  const [step, setStep] = useState<Step>('fisicos')
+  const [step, setStep] = useState<FlowStep>(initialWorker ? 'fisicos' : 'worker')
+  const [workerId, setWorkerId] = useState(initialWorkerId)
   const [seccionGFisicos, setSeccionGFisicos] =
-    useState<FichaEva2SeccionGFisicosType | null>(null)
+    useState<FichaEva2SeccionGFisicosType | null>(
+      initialWorker
+        ? {
+            ...FICHA_EVA2_SECCION_G_FISICOS_DEFAULTS,
+            puesto_trabajo:
+              initialWorker.puesto_trabajo_ciuo ||
+              initialWorker.cargo_ocupacion ||
+              '',
+          }
+        : null
+    )
   const [seccionGSeguridad, setSeccionGSeguridad] =
     useState<FichaEva2SeccionGSeguridadType | null>(null)
   const [seccionGQuimicos, setSeccionGQuimicos] =
@@ -49,6 +109,7 @@ export function FichaEva2Flow() {
     useState<FichaEva2MedidasPreventivasType | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const selectedWorker = workers.find((worker) => worker.id === workerId)
 
   return (
     <div className="space-y-6">
@@ -63,6 +124,53 @@ export function FichaEva2Flow() {
         <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
           {error}
         </div>
+      )}
+
+      {step === 'worker' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Trabajador</CardTitle>
+            <CardDescription>
+              Selecciona el trabajador para vincular esta ficha y prellenar el puesto.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Select value={workerId} onValueChange={setWorkerId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un trabajador" />
+              </SelectTrigger>
+              <SelectContent>
+                {workers.map((worker) => (
+                  <SelectItem key={worker.id} value={worker.id}>
+                    {getWorkerLabel(worker)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                onClick={() => {
+                  if (!selectedWorker) {
+                    setError('Debes seleccionar un trabajador')
+                    return
+                  }
+                  setError(null)
+                  setSeccionGFisicos((prev) => prev ?? {
+                    ...FICHA_EVA2_SECCION_G_FISICOS_DEFAULTS,
+                    puesto_trabajo:
+                      selectedWorker.puesto_trabajo_ciuo ||
+                      selectedWorker.cargo_ocupacion ||
+                      '',
+                  })
+                  setStep('fisicos')
+                }}
+              >
+                Continuar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {step === 'fisicos' && (
@@ -170,7 +278,12 @@ export function FichaEva2Flow() {
             setError(null)
             setSaving(true)
             try {
+              if (!workerId) {
+                setError('Debes seleccionar un trabajador')
+                return
+              }
               const { id } = await createFichaMedicaEvaluacion2({
+                worker_id: workerId,
                 seccionGFisicos,
                 seccionGSeguridad,
                 seccionGQuimicos,

@@ -19,6 +19,8 @@ export default async function FichaEva2DetailPage({ params }: PageProps) {
 
   const docForView: FichaMedicaEvaluacion2Document = {
     _id: String(doc._id),
+    worker_id: doc.worker_id ? String(doc.worker_id) : undefined,
+    worker_snapshot: doc.worker_snapshot as FichaMedicaEvaluacion2Document['worker_snapshot'],
     seccionG: doc.seccionG as FichaMedicaEvaluacion2Document['seccionG'],
     created_at: doc.createdAt ? String(doc.createdAt) : undefined,
     updated_at: doc.updatedAt ? String(doc.updatedAt) : undefined,

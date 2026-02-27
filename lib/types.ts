@@ -22,8 +22,16 @@ export interface Worker {
   employee_code: string
   first_name: string
   last_name: string
+  primer_nombre: string | null
+  segundo_nombre: string | null
+  primer_apellido: string | null
+  segundo_apellido: string | null
   birth_date: string | null
   gender: 'M' | 'F' | 'Otro' | null
+  sexo: 'hombre' | 'mujer' | null
+  grupo_sanguineo: string | null
+  lateralidad: 'diestro' | 'zurdo' | 'ambidiestro' | null
+  puesto_trabajo_ciuo: string | null
   curp: string | null
   rfc: string | null
   nss: string | null
@@ -38,6 +46,21 @@ export interface Worker {
   updated_at: string
   created_by: string | null
   company?: Company
+}
+
+export interface WorkerSnapshot {
+  worker_id: string
+  primer_nombre: string
+  segundo_nombre: string
+  primer_apellido: string
+  segundo_apellido: string
+  sexo: 'hombre' | 'mujer' | null
+  fecha_nacimiento: string | null
+  edad: number | null
+  grupo_sanguineo: string | null
+  lateralidad: 'diestro' | 'zurdo' | 'ambidiestro' | null
+  cargo_ocupacion: string | null
+  puesto_trabajo_ciuo: string | null
 }
 
 export interface MedicalRecord {

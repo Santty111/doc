@@ -9,6 +9,7 @@ import type { FactorQuimicoKey } from '@/lib/constants/factores-riesgo-quimicos'
 import type { FactorBiologicoKey } from '@/lib/constants/factores-riesgo-biologicos'
 import type { FactorErgonomicoKey } from '@/lib/constants/factores-riesgo-ergonomicos'
 import type { FactorPsicosocialKey } from '@/lib/constants/factores-riesgo-psicosociales'
+import type { WorkerSnapshot } from '@/lib/types'
 
 /** 7 campos por cada sub-item */
 export interface FactorFisicoCampos {
@@ -199,6 +200,8 @@ export const FICHA_EVA2_SECCION_G_PSICOSOCIALES_DEFAULTS: FichaEva2SeccionGPsico
 /** Documento completo almacenado en MongoDB */
 export interface FichaMedicaEvaluacion2Document {
   _id: string
+  worker_id?: string
+  worker_snapshot?: WorkerSnapshot
   seccionG?: {
     fisicos?: Partial<FichaEva2SeccionGFisicos>
     seguridad?: Partial<FichaEva2SeccionGSeguridad>

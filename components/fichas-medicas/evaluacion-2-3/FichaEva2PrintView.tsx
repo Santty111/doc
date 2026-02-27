@@ -134,7 +134,13 @@ export function FichaEva2PrintView({ data, autoPrint = false }: FichaEva2PrintVi
                 Evaluación Ocupacional 2-3 — Factores de Riesgo
               </h1>
             </div>
-            <Link href="/dashboard/fichas-medicas/evaluacion-3-3/nuevo">
+            <Link
+              href={
+                data.worker_id
+                  ? `/dashboard/fichas-medicas/evaluacion-3-3/nuevo?trabajador=${encodeURIComponent(data.worker_id)}`
+                  : '/dashboard/fichas-medicas/evaluacion-3-3/nuevo'
+              }
+            >
               <Button variant="outline" size="sm">
                 Seguir 3-3
                 <ArrowRight className="ml-2 h-4 w-4" />

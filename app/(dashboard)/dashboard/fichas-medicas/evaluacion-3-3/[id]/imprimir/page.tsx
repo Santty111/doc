@@ -22,7 +22,16 @@ export default async function FichaEva3ImprimirPage({
 
   const docForView: FichaMedicaEvaluacion3Document = {
     _id: String(doc._id),
+    worker_id: doc.worker_id ? String(doc.worker_id) : undefined,
+    worker_snapshot: doc.worker_snapshot as FichaMedicaEvaluacion3Document['worker_snapshot'],
     seccionH: doc.seccionH as FichaMedicaEvaluacion3Document['seccionH'],
+    seccionI: doc.seccionI as FichaMedicaEvaluacion3Document['seccionI'],
+    seccionJ: doc.seccionJ as FichaMedicaEvaluacion3Document['seccionJ'],
+    seccionK: doc.seccionK as FichaMedicaEvaluacion3Document['seccionK'],
+    seccionL: doc.seccionL as FichaMedicaEvaluacion3Document['seccionL'],
+    seccionM: doc.seccionM as FichaMedicaEvaluacion3Document['seccionM'],
+    seccionN: doc.seccionN as FichaMedicaEvaluacion3Document['seccionN'],
+    seccionO: doc.seccionO as FichaMedicaEvaluacion3Document['seccionO'],
     created_at: doc.createdAt ? String(doc.createdAt) : undefined,
     updated_at: doc.updatedAt ? String(doc.updatedAt) : undefined,
   }

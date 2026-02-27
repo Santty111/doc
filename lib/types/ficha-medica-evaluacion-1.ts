@@ -2,6 +2,7 @@
  * Tipos para Ficha Médica - Evaluación Ocupacional 1-3.
  * Los datos se guardan como documento JSON en MongoDB.
  */
+import type { WorkerSnapshot } from '@/lib/types'
 
 /** Opciones de atención prioritaria (checkboxes) */
 export interface AtencionPrioritaria {
@@ -350,6 +351,8 @@ export const FICHA_EVA1_SECCION_F_DEFAULTS: FichaEva1SeccionF = {
 
 /** Documento de Evaluación Ocupacional 1-3 */
 export interface FichaMedicaEvaluacion1Document {
+  worker_id?: string
+  worker_snapshot?: WorkerSnapshot
   seccionA: FichaEva1SeccionA
   seccionB?: FichaEva1SeccionB
   seccionC?: FichaEva1SeccionC

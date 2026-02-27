@@ -21,6 +21,8 @@ export default async function CertificadoAptitudImprimirPage({
   // Convertir a objeto plano para poder pasarlo al Client Component
   const data = JSON.parse(
     JSON.stringify({
+      worker_id: doc.worker_id ? String(doc.worker_id) : undefined,
+      worker_snapshot: doc.worker_snapshot,
       seccionA: doc.seccionA,
       seccionB: doc.seccionB,
       seccionC: doc.seccionC,

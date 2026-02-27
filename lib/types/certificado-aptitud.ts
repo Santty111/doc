@@ -2,6 +2,7 @@
  * Tipos para el flujo de Certificado de Aptitud Oficial.
  * Los datos se guardan como un único documento JSON en MongoDB.
  */
+import type { WorkerSnapshot } from '@/lib/types'
 
 /** Sección A - Datos del Establecimiento, Empresa y Usuario */
 export interface CertificadoAptitudSeccionA {
@@ -163,6 +164,8 @@ export const CERTIFICADO_APTITUD_SECCION_G_DEFAULTS: CertificadoAptitudSeccionG 
 
 /** Documento completo del Certificado de Aptitud Oficial (para persistencia) */
 export interface CertificadoAptitudOficialDocument {
+  worker_id?: string
+  worker_snapshot?: WorkerSnapshot
   seccionA: CertificadoAptitudSeccionA
   seccionB: CertificadoAptitudSeccionB
   seccionC: CertificadoAptitudSeccionC

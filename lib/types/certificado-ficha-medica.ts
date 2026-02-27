@@ -2,6 +2,7 @@
  * Tipos para el Certificado de Evaluación Médica Ocupacional (de la ficha médica).
  * No confundir con el Certificado de Aptitud Oficial.
  */
+import type { WorkerSnapshot } from '@/lib/types'
 
 /** Sección A - Datos del Establecimiento y Datos del Usuario */
 export interface CertificadoFichaMedicaSeccionA {
@@ -132,6 +133,8 @@ export const CERTIFICADO_FICHA_MEDICA_SECCION_E_DEFAULTS: CertificadoFichaMedica
 
 /** Documento completo del Certificado de la Ficha Médica */
 export interface CertificadoFichaMedicaDocument {
+  worker_id?: string
+  worker_snapshot?: WorkerSnapshot
   seccionA: CertificadoFichaMedicaSeccionA
   /** Opcional para compatibilidad con certificados creados antes de agregar sección B */
   seccionB?: CertificadoFichaMedicaSeccionB

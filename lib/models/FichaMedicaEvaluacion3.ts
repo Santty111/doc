@@ -6,6 +6,12 @@ import mongoose from 'mongoose'
  */
 const fichaMedicaEvaluacion3Schema = new mongoose.Schema(
   {
+    worker_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Worker',
+      required: false,
+    },
+    worker_snapshot: { type: mongoose.Schema.Types.Mixed, required: false },
     seccionH: {
       antecedentes: { type: mongoose.Schema.Types.Mixed, required: false },
     },

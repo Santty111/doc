@@ -20,6 +20,8 @@ export default async function CertificadoFichaMedicaDetailPage({
   if (!doc) notFound()
 
   const docForView: CertificadoFichaMedicaDocument = {
+    worker_id: doc.worker_id ? String(doc.worker_id) : undefined,
+    worker_snapshot: doc.worker_snapshot as CertificadoFichaMedicaDocument['worker_snapshot'],
     seccionA: doc.seccionA as CertificadoFichaMedicaDocument['seccionA'],
     seccionB: (doc.seccionB ?? { fecha_emision: new Date().toISOString().split('T')[0], evaluacion: 'ingreso' }) as CertificadoFichaMedicaDocument['seccionB'],
     seccionC: (doc.seccionC ?? { concepto_aptitud: 'apto', detalle_observaciones: '' }) as CertificadoFichaMedicaDocument['seccionC'],

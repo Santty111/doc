@@ -22,6 +22,8 @@ export default async function FichaEva1ImprimirPage({
 
   const raw = doc as Record<string, unknown>
   const data = {
+    worker_id: raw.worker_id ? String(raw.worker_id) : undefined,
+    worker_snapshot: raw.worker_snapshot,
     seccionA: raw.seccionA ?? {},
     seccionB: raw.seccionB ?? {},
     seccionC: raw.seccionC ?? {},

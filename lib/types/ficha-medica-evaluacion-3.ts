@@ -2,6 +2,7 @@
  * Tipos para Ficha Médica - Evaluación Ocupacional 3-3.
  * Sección H. Actividad Laboral / Incidentes / Accidentes / Enfermedades Ocupacionales.
  */
+import type { WorkerSnapshot } from '@/lib/types'
 
 /** Una fila de antecedentes de empleos anteriores y/o trabajo actual */
 export interface FichaEva3AntecedenteEmpleo {
@@ -102,6 +103,8 @@ export const FICHA_EVA3_ANTECEDENTE_DEFAULT: FichaEva3AntecedenteEmpleo = {
 /** Documento completo almacenado en MongoDB */
 export interface FichaMedicaEvaluacion3Document {
   _id: string
+  worker_id?: string
+  worker_snapshot?: WorkerSnapshot
   seccionH?: {
     antecedentes?: FichaEva3AntecedenteEmpleo[]
   }

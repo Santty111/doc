@@ -3,6 +3,21 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createFichaMedicaEvaluacion3 } from '@/lib/actions'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { FichaEva3SeccionH } from './FichaEva3SeccionH'
 import { FichaEva3SeccionI } from './FichaEva3SeccionI'
 import { FichaEva3SeccionJ } from './FichaEva3SeccionJ'
@@ -19,10 +34,42 @@ import type {
 } from '@/lib/types/ficha-medica-evaluacion-3'
 
 type SeccionActual = 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O'
+interface WorkerOption {
+  id: string
+  primer_nombre: string
+  segundo_nombre: string
+  primer_apellido: string
+  segundo_apellido: string
+}
 
-export function FichaEva3Flow() {
+type Step = 'WORKER' | SeccionActual
+
+interface FichaEva3FlowProps {
+  workers: WorkerOption[]
+  defaultWorkerId?: string
+}
+
+function getWorkerLabel(worker: WorkerOption) {
+  return [
+    worker.primer_apellido,
+    worker.segundo_apellido,
+    worker.primer_nombre,
+    worker.segundo_nombre,
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+export function FichaEva3Flow({ workers, defaultWorkerId }: FichaEva3FlowProps) {
+  const initialWorkerId =
+    defaultWorkerId && workers.some((worker) => worker.id === defaultWorkerId)
+      ? defaultWorkerId
+      : ''
   const router = useRouter()
-  const [seccionActual, setSeccionActual] = useState<SeccionActual>('H')
+  const [seccionActual, setSeccionActual] = useState<Step>(
+    initialWorkerId ? 'H' : 'WORKER'
+  )
+  const [workerId, setWorkerId] = useState(initialWorkerId)
   const [seccionHAntecedentes, setSeccionHAntecedentes] = useState<
     FichaEva3AntecedenteEmpleo[] | null
   >(null)
@@ -49,7 +96,8 @@ export function FichaEva3Flow() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const labels: Record<SeccionActual, string> = {
+  const labels: Record<Step, string> = {
+    WORKER: 'Selección de trabajador',
     H: 'H. Actividad laboral / Incidentes / Accidentes / Enfermedades ocupacionales',
     I: 'I. Actividades extra laborales',
     J: 'J. Resultados de exámenes generales y específicos',
@@ -73,6 +121,46 @@ export function FichaEva3Flow() {
         <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
           {error}
         </div>
+      )}
+
+      {seccionActual === 'WORKER' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Trabajador</CardTitle>
+            <CardDescription>
+              Selecciona el trabajador para vincular esta ficha.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Select value={workerId} onValueChange={setWorkerId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un trabajador" />
+              </SelectTrigger>
+              <SelectContent>
+                {workers.map((worker) => (
+                  <SelectItem key={worker.id} value={worker.id}>
+                    {getWorkerLabel(worker)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                onClick={() => {
+                  if (!workerId) {
+                    setError('Debes seleccionar un trabajador')
+                    return
+                  }
+                  setError(null)
+                  setSeccionActual('H')
+                }}
+              >
+                Continuar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {seccionActual === 'H' && (
@@ -208,7 +296,12 @@ export function FichaEva3Flow() {
             setError(null)
             setSaving(true)
             try {
+              if (!workerId) {
+                setError('Debes seleccionar un trabajador')
+                return
+              }
               const { id } = await createFichaMedicaEvaluacion3({
+                worker_id: workerId,
                 seccionHAntecedentes: seccionHAntecedentes ?? [],
                 seccionIActividades: seccionIActividades ?? [],
                 seccionJResultados: seccionJResultados ?? [],

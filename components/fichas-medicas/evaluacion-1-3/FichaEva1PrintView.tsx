@@ -219,7 +219,13 @@ export function FichaEva1PrintView({
                 Evaluación Ocupacional 1-3 — Datos Generales
               </h1>
             </div>
-            <Link href="/dashboard/fichas-medicas/evaluacion-2-3/nuevo">
+            <Link
+              href={
+                data.worker_id
+                  ? `/dashboard/fichas-medicas/evaluacion-2-3/nuevo?trabajador=${encodeURIComponent(data.worker_id)}`
+                  : '/dashboard/fichas-medicas/evaluacion-2-3/nuevo'
+              }
+            >
               <Button variant="outline" size="sm">
                 Seguir 2-3
                 <ArrowRight className="ml-2 h-4 w-4" />

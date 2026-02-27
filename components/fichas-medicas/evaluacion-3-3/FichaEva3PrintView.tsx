@@ -76,6 +76,23 @@ const PRINT_STYLES = `
     #ficha-eva3-print-content .ficha-eva3-tabla th {
       padding: 2px 3px !important;
     }
+    .ficha-eva3-pagina {
+      page-break-after: always !important;
+      page-break-inside: avoid !important;
+      min-height: 273mm !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+    }
+    .ficha-eva3-pagina:last-child {
+      page-break-after: auto !important;
+    }
+    .ficha-eva3-bloque-final {
+      page-break-before: always !important;
+      page-break-inside: avoid !important;
+      min-height: 273mm !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+    }
   }
 `
 
@@ -140,7 +157,13 @@ export function FichaEva3PrintView({ data, autoPrint = false }: FichaEva3PrintVi
                 Evaluación Ocupacional 3-3 — Cierre de Evaluación
               </h1>
             </div>
-            <Link href="/dashboard/fichas-medicas/certificado/nuevo">
+            <Link
+              href={
+                data.worker_id
+                  ? `/dashboard/fichas-medicas/certificado/nuevo?trabajador=${encodeURIComponent(data.worker_id)}`
+                  : '/dashboard/fichas-medicas/certificado/nuevo'
+              }
+            >
               <Button variant="outline" size="sm">
                 Seguir Certificado
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -161,6 +184,7 @@ export function FichaEva3PrintView({ data, autoPrint = false }: FichaEva3PrintVi
           </div>
         </div>
         <div id="ficha-eva3-print-content" className="w-full">
+          <div className="ficha-eva3-pagina">
           <table className="ficha-eva3-tabla ficha-eva3-tabla-seccion-h w-full table-auto border-collapse text-sm print:table-fixed">
             <thead>
               <tr>
@@ -447,6 +471,9 @@ export function FichaEva3PrintView({ data, autoPrint = false }: FichaEva3PrintVi
             </tbody>
           </table>
 
+          </div>
+
+          <div className="ficha-eva3-bloque-final">
           {/* Sección L - Aptitud médica */}
           <table className="ficha-eva3-tabla mt-8 w-full table-fixed border-collapse text-sm">
             <thead>
@@ -627,6 +654,7 @@ export function FichaEva3PrintView({ data, autoPrint = false }: FichaEva3PrintVi
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </>

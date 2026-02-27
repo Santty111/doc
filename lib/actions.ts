@@ -15,6 +15,7 @@ import {
   FichaMedicaEvaluacion2,
   FichaMedicaEvaluacion3,
 } from '@/lib/models'
+import type { WorkerSnapshot } from '@/lib/types'
 
 async function getUserId() {
   const session = await getServerSession(authOptions)
@@ -136,7 +137,10 @@ export async function createCertificadoAptitudOficial(
   const userId = await getUserId()
   if (!userId) throw new Error('No autorizado')
   await connectDB()
+  const workerSnapshot = await resolveWorkerSnapshot(data.worker_id)
   const doc = await CertificadoAptitudOficial.create({
+    worker_id: workerSnapshot.worker_id,
+    worker_snapshot: workerSnapshot,
     seccionA: data.seccionA,
     seccionB: data.seccionB,
     seccionC: data.seccionC,
@@ -160,13 +164,78 @@ function toPlainObject(obj: unknown): unknown {
   }
 }
 
+function getDateOnly(value: unknown): string | null {
+  if (!value) return null
+  if (typeof value === 'string') return value.split('T')[0]
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().split('T')[0]
+  }
+  return null
+}
+
+function calcAgeFromDate(dateOnly: string | null): number | null {
+  if (!dateOnly) return null
+  const birth = new Date(dateOnly)
+  if (Number.isNaN(birth.getTime())) return null
+  const now = new Date()
+  let age = now.getFullYear() - birth.getFullYear()
+  const monthDiff = now.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
+    age -= 1
+  }
+  return age >= 0 ? age : null
+}
+
+async function resolveWorkerSnapshot(workerIdRaw: unknown): Promise<WorkerSnapshot> {
+  const workerId = typeof workerIdRaw === 'string' ? workerIdRaw : ''
+  if (!workerId) {
+    throw new Error('Debe seleccionar un trabajador')
+  }
+
+  const workerDoc = await Worker.findById(workerId).lean()
+  if (!workerDoc) {
+    throw new Error('Trabajador no encontrado')
+  }
+
+  const worker = workerDoc as Record<string, unknown>
+  const firstNameLegacy = String(worker.first_name ?? '').trim()
+  const lastNameLegacy = String(worker.last_name ?? '').trim()
+  const firstNameParts = firstNameLegacy ? firstNameLegacy.split(/\s+/) : []
+  const lastNameParts = lastNameLegacy ? lastNameLegacy.split(/\s+/) : []
+  const fechaNacimiento = getDateOnly(worker.birth_date)
+  const sexo =
+    (worker.sexo as WorkerSnapshot['sexo']) ||
+    (worker.gender === 'M' ? 'hombre' : worker.gender === 'F' ? 'mujer' : null)
+
+  return {
+    worker_id: workerId,
+    primer_nombre: String(worker.primer_nombre ?? firstNameParts[0] ?? ''),
+    segundo_nombre: String(worker.segundo_nombre ?? firstNameParts.slice(1).join(' ') ?? ''),
+    primer_apellido: String(worker.primer_apellido ?? lastNameParts[0] ?? ''),
+    segundo_apellido: String(worker.segundo_apellido ?? lastNameParts.slice(1).join(' ') ?? ''),
+    sexo,
+    fecha_nacimiento: fechaNacimiento,
+    edad: calcAgeFromDate(fechaNacimiento),
+    grupo_sanguineo:
+      (worker.grupo_sanguineo as string | null) ??
+      (worker.blood_type as string | null) ??
+      null,
+    lateralidad: (worker.lateralidad as WorkerSnapshot['lateralidad']) ?? null,
+    cargo_ocupacion: (worker.position as string | null) ?? null,
+    puesto_trabajo_ciuo: (worker.puesto_trabajo_ciuo as string | null) ?? null,
+  }
+}
+
 export async function createFichaMedicaEvaluacion1(
   data: Record<string, unknown>
 ) {
   const userId = await getUserId()
   if (!userId) throw new Error('No autorizado')
   await connectDB()
+  const workerSnapshot = await resolveWorkerSnapshot(data.worker_id)
   const doc = await FichaMedicaEvaluacion1.create({
+    worker_id: workerSnapshot.worker_id,
+    worker_snapshot: workerSnapshot,
     seccionA: toPlainObject(data.seccionA) ?? {},
     seccionB: data.seccionB != null ? toPlainObject(data.seccionB) : null,
     seccionC: data.seccionC != null ? toPlainObject(data.seccionC) : null,
@@ -187,7 +256,10 @@ export async function createFichaMedicaEvaluacion2(
   const userId = await getUserId()
   if (!userId) throw new Error('No autorizado')
   await connectDB()
+  const workerSnapshot = await resolveWorkerSnapshot(data.worker_id)
   const doc = await FichaMedicaEvaluacion2.create({
+    worker_id: workerSnapshot.worker_id,
+    worker_snapshot: workerSnapshot,
     seccionG: {
       fisicos: data.seccionGFisicos != null ? toPlainObject(data.seccionGFisicos) : null,
       seguridad: data.seccionGSeguridad != null ? toPlainObject(data.seccionGSeguridad) : null,
@@ -211,7 +283,10 @@ export async function createFichaMedicaEvaluacion3(
   const userId = await getUserId()
   if (!userId) throw new Error('No autorizado')
   await connectDB()
+  const workerSnapshot = await resolveWorkerSnapshot(data.worker_id)
   const doc = await FichaMedicaEvaluacion3.create({
+    worker_id: workerSnapshot.worker_id,
+    worker_snapshot: workerSnapshot,
     seccionH: {
       antecedentes: data.seccionHAntecedentes != null ? toPlainObject(data.seccionHAntecedentes) : [],
     },
@@ -255,7 +330,10 @@ export async function createCertificadoFichaMedica(
   const userId = await getUserId()
   if (!userId) throw new Error('No autorizado')
   await connectDB()
+  const workerSnapshot = await resolveWorkerSnapshot(data.worker_id)
   const doc = await CertificadoFichaMedica.create({
+    worker_id: workerSnapshot.worker_id,
+    worker_snapshot: workerSnapshot,
     seccionA: toPlainObject(data.seccionA) ?? {},
     seccionB: toPlainObject(data.seccionB) ?? {},
     seccionC: toPlainObject(data.seccionC) ?? {},

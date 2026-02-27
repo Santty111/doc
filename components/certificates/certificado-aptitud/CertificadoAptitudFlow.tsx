@@ -3,6 +3,21 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createCertificadoAptitudOficial } from '@/lib/actions'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { CertificadoPaso1SeccionA } from './CertificadoPaso1SeccionA'
 import { CertificadoSeccionB } from './CertificadoSeccionB'
 import { CertificadoSeccionC } from './CertificadoSeccionC'
@@ -21,8 +36,21 @@ import type {
 } from '@/lib/types/certificado-aptitud'
 
 type SeccionActual = 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
+type Step = 'WORKER' | SeccionActual
 
-const SECCION_LABELS: Record<SeccionActual, string> = {
+interface WorkerOption {
+  id: string
+  primer_nombre: string
+  segundo_nombre: string
+  primer_apellido: string
+  segundo_apellido: string
+  sexo: 'hombre' | 'mujer' | null
+  cargo_ocupacion: string | null
+  institucion_sistema: string | null
+}
+
+const SECCION_LABELS: Record<Step, string> = {
+  WORKER: 'Selección de trabajador',
   A: 'A. Datos del establecimiento, empresa y usuario',
   B: 'B. Datos generales',
   C: 'C. Concepto para aptitud laboral',
@@ -33,13 +61,48 @@ const SECCION_LABELS: Record<SeccionActual, string> = {
 
 interface CertificadoAptitudFlowProps {
   defaultProfessionalName?: string
+  workers: WorkerOption[]
+}
+
+function getWorkerLabel(worker: WorkerOption) {
+  return [
+    worker.primer_apellido,
+    worker.segundo_apellido,
+    worker.primer_nombre,
+    worker.segundo_nombre,
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+function buildSeccionAFromWorker(worker: WorkerOption): CertificadoAptitudSeccionA {
+  return {
+    empresa: {
+      institucion_nombre: worker.institucion_sistema ?? '',
+      ruc: '',
+      ciiu: '',
+      establecimiento_salud: '',
+      numero_historia_clinica: '',
+      numero_archivo: '',
+    },
+    usuario: {
+      primer_apellido: worker.primer_apellido || '',
+      segundo_apellido: worker.segundo_apellido || '',
+      primer_nombre: worker.primer_nombre || '',
+      segundo_nombre: worker.segundo_nombre || '',
+      sexo: worker.sexo === 'mujer' ? 'F' : 'M',
+      cargo_ocupacion: worker.cargo_ocupacion || '',
+    },
+  }
 }
 
 export function CertificadoAptitudFlow({
   defaultProfessionalName,
+  workers,
 }: CertificadoAptitudFlowProps) {
   const router = useRouter()
-  const [seccionActual, setSeccionActual] = useState<SeccionActual>('A')
+  const [seccionActual, setSeccionActual] = useState<Step>('WORKER')
+  const [workerId, setWorkerId] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [seccionA, setSeccionA] = useState<CertificadoAptitudSeccionA | null>(
@@ -59,6 +122,7 @@ export function CertificadoAptitudFlow({
   )
   const [seccionFinal, setSeccionFinal] =
     useState<CertificadoSeccionFinalData | null>(null)
+  const selectedWorker = workers.find((worker) => worker.id === workerId)
 
   return (
     <div className="space-y-6">
@@ -70,6 +134,53 @@ export function CertificadoAptitudFlow({
           {SECCION_LABELS[seccionActual]}
         </p>
       </div>
+
+      {error && (
+        <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      {seccionActual === 'WORKER' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Trabajador</CardTitle>
+            <CardDescription>
+              Selecciona el trabajador para autocompletar los datos base del certificado.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Select value={workerId} onValueChange={setWorkerId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un trabajador" />
+              </SelectTrigger>
+              <SelectContent>
+                {workers.map((worker) => (
+                  <SelectItem key={worker.id} value={worker.id}>
+                    {getWorkerLabel(worker)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                onClick={() => {
+                  if (!selectedWorker) {
+                    setError('Debes seleccionar un trabajador')
+                    return
+                  }
+                  setError(null)
+                  setSeccionA(buildSeccionAFromWorker(selectedWorker))
+                  setSeccionActual('A')
+                }}
+              >
+                Continuar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {seccionActual === 'A' && (
         <CertificadoPaso1SeccionA
@@ -127,11 +238,6 @@ export function CertificadoAptitudFlow({
 
       {seccionActual === 'F' && (
         <>
-          {error && (
-            <div className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
-              {error}
-            </div>
-          )}
           <CertificadoSeccionFinal
             evaluacion={seccionB?.evaluacion ?? 'ingreso'}
             defaultValues={seccionFinal ?? undefined}
@@ -144,7 +250,12 @@ export function CertificadoAptitudFlow({
               setError(null)
               setSaving(true)
               try {
+                if (!workerId) {
+                  setError('Debes seleccionar un trabajador')
+                  return
+                }
                 const certificadoCompleto = {
+                  worker_id: workerId,
                   seccionA,
                   seccionB,
                   seccionC,
