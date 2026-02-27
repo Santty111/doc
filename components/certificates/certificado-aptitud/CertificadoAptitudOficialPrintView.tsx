@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, FileDown } from 'lucide-react'
+import { ArrowLeft, Printer } from 'lucide-react'
 import type { CertificadoAptitudOficialDocument } from '@/lib/types/certificado-aptitud'
 
 const PRINT_STYLES = `
@@ -157,30 +157,37 @@ export function CertificadoAptitudOficialPrintView({
       <style dangerouslySetInnerHTML={{ __html: PRINT_STYLES }} />
       <div
         id="certificado-print-root"
-        className="min-h-screen w-full max-w-[210mm] mx-auto bg-white print:min-h-0 print:max-w-none print:mx-0"
+        className="min-h-screen w-full max-w-[210mm] mx-auto space-y-6 rounded-lg border bg-white p-6 print:min-h-0 print:max-w-none print:mx-0 print:border-0 print:shadow-none print:p-0"
       >
         <div
           id="certificado-print-content"
           className="mx-auto max-w-4xl px-6 py-8 print:mx-0 print:max-w-none print:h-full print:min-h-full print:py-0 print:px-0"
         >
         {/* Controles - no se imprimen */}
-        <div className="mb-6 flex flex-col gap-3 print:hidden">
-          <div className="flex items-center gap-4">
-            <Link href={`/dashboard/certificado-aptitud-oficial`}>
+        <div className="mb-6 print:hidden">
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <Link href="/dashboard/certificado-aptitud-oficial">
               <Button variant="outline" size="sm">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Volver
               </Button>
             </Link>
-            <Button size="sm" onClick={() => window.print()}>
-              <FileDown className="mr-2 h-4 w-4" />
-              Guardar como PDF / Imprimir
-            </Button>
+            <h1 className="text-3xl font-semibold text-gray-900">
+              Certificado de Aptitud Ocupacional
+            </h1>
           </div>
-          <p className="text-muted-foreground text-xs">
-            El certificado se ajusta automáticamente a la hoja A4. En Firefox,
-            desactive &quot;Encabezados y pies de página&quot; si aparecen.
-          </p>
+          <div className="rounded-lg border bg-card p-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Printer className="mr-2 h-4 w-4" />
+                Imprimir / Ver PDF
+              </Button>
+              <p className="text-muted-foreground text-xs">
+                El certificado se ajusta automáticamente a la hoja A4. En Firefox,
+                desactive &quot;Encabezados y pies de página&quot; si aparecen.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Contenido - formato Excel/tabular */}
@@ -191,7 +198,7 @@ export function CertificadoAptitudOficialPrintView({
               <tr>
                 <th
                   colSpan={6}
-                  className={`${headerCell} bg-emerald-200`}
+                  className={`${headerCell} bg-sky-200`}
                 >
                   A. DATOS DEL ESTABLECIMIENTO - EMPRESA Y USUARIO
                 </th>
@@ -239,7 +246,7 @@ export function CertificadoAptitudOficialPrintView({
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
-                <th colSpan={4} className={`${headerCell} bg-violet-100`}>
+                <th colSpan={4} className={`${headerCell} bg-sky-100`}>
                   B. DATOS GENERALES
                 </th>
               </tr>
@@ -444,10 +451,10 @@ export function CertificadoAptitudOficialPrintView({
           <table className="w-full border-collapse border-t-0 border-gray-300 text-sm">
             <thead>
               <tr>
-                <th className={`${headerCell} bg-violet-100 border-r border-gray-300`} style={{ width: 'auto' }}>
+                <th className={`${headerCell} bg-sky-100 border-r border-gray-300`} style={{ width: 'auto' }}>
                   F. DATOS DEL PROFESIONAL DE SALUD
                 </th>
-                <th className={`${headerCell} bg-violet-100`} style={{ width: 256 }}>
+                <th className={`${headerCell} bg-sky-100`} style={{ width: 256 }}>
                   G. FIRMA DEL USUARIO
                 </th>
               </tr>

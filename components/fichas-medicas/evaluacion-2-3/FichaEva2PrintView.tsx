@@ -2,7 +2,8 @@
 
 import React, { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Printer } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Printer } from 'lucide-react'
+import Link from 'next/link'
 import type { FichaMedicaEvaluacion2Document } from '@/lib/types/ficha-medica-evaluacion-2'
 import { FACTORES_FISICOS } from '@/lib/constants/factores-riesgo-fisicos'
 import { FACTORES_SEGURIDAD } from '@/lib/constants/factores-riesgo-seguridad'
@@ -79,7 +80,7 @@ const headerCell =
 const dataCell =
   'border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 print:px-1 print:py-0.5 print:text-[9px]'
 const sectionHeader =
-  'border border-gray-300 bg-violet-200 px-2 py-1.5 text-left text-xs font-bold uppercase text-gray-900 print:px-1 print:py-0.5 print:text-[9px]'
+  'border border-gray-300 bg-sky-200 px-2 py-1.5 text-left text-xs font-bold uppercase text-gray-900 print:px-1 print:py-0.5 print:text-[9px]'
 
 function getCampo(
   factores: Record<string, { campo1?: string; campo2?: string; campo3?: string; campo4?: string; campo5?: string; campo6?: string; campo7?: string }> | undefined,
@@ -120,14 +121,37 @@ export function FichaEva2PrintView({ data, autoPrint = false }: FichaEva2PrintVi
         id="ficha-eva2-print-root"
         className="min-h-screen w-full max-w-[210mm] mx-auto space-y-6 rounded-lg border bg-white p-6 print:min-h-0 print:max-w-none print:mx-0 print:border-0 print:shadow-none print:p-0"
       >
-        <div className="mb-6 flex flex-wrap items-center gap-4 print:hidden">
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <Printer className="mr-2 h-4 w-4" />
-            Imprimir / Ver PDF
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            Si aparecen encabezados o pies de página, desmárcalos en la ventana de impresión.
-          </p>
+        <div className="mb-6 print:hidden">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <Link href="/dashboard/fichas-medicas/evaluacion-2-3">
+                <Button variant="outline" size="sm">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Volver
+                </Button>
+              </Link>
+              <h1 className="min-w-0 flex-1 text-2xl font-semibold leading-tight text-gray-900">
+                Evaluación Ocupacional 2-3 — Factores de Riesgo
+              </h1>
+            </div>
+            <Link href="/dashboard/fichas-medicas/evaluacion-3-3/nuevo">
+              <Button variant="outline" size="sm">
+                Seguir 3-3
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+          <div className="rounded-lg border bg-card p-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Printer className="mr-2 h-4 w-4" />
+                Imprimir / Ver PDF
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Si aparecen encabezados o pies de página, desmárcalos en la ventana de impresión.
+              </p>
+            </div>
+          </div>
         </div>
         <div id="ficha-eva2-print-content" className="w-full">
         {/* Hoja 1: Puesto, Actividades, FÍSICO, DE SEGURIDAD, QUÍMICO */}
@@ -137,7 +161,7 @@ export function FichaEva2PrintView({ data, autoPrint = false }: FichaEva2PrintVi
             <tr>
               <th
                 colSpan={8}
-                className={`${sectionHeader} bg-violet-100 border-t border-gray-300`}
+                className={`${sectionHeader} bg-sky-100 border-t border-gray-300`}
               >
                 G. FACTORES DE RIESGO DEL TRABAJO ACTUAL
               </th>
@@ -239,7 +263,7 @@ export function FichaEva2PrintView({ data, autoPrint = false }: FichaEva2PrintVi
             <tr>
               <th
                 colSpan={8}
-                className={`${sectionHeader} bg-violet-100 border-t border-gray-300`}
+                className={`${sectionHeader} bg-sky-100 border-t border-gray-300`}
               >
                 G. FACTORES DE RIESGO DEL TRABAJO ACTUAL
               </th>

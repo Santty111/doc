@@ -48,8 +48,6 @@ export default async function FichaEva1DetailPage({
         </Link>
         <Link
           href={`/dashboard/fichas-medicas/evaluacion-1-3/${id}/imprimir`}
-          target="_blank"
-          rel="noopener noreferrer"
         >
           <Button variant="outline" size="sm">
             <Printer className="mr-2 h-4 w-4" />

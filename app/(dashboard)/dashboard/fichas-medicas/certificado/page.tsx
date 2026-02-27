@@ -1,7 +1,7 @@
 import { connectDB } from '@/lib/db'
 import { CertificadoFichaMedica } from '@/lib/models'
 import { Button } from '@/components/ui/button'
-import { Plus, FileText } from 'lucide-react'
+import { Plus, FileText, Printer } from 'lucide-react'
 import Link from 'next/link'
 
 function formatDate(date: unknown): string {
@@ -81,22 +81,14 @@ export default async function CertificadoFichaMedicaListPage() {
                     <td className="px-4 py-3">{nombre}</td>
                     <td className="px-4 py-3">{formatDate(c.createdAt)}</td>
                     <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        <Link
-                          href={`/dashboard/fichas-medicas/certificado/${certId}`}
-                        >
-                          <Button variant="outline" size="sm">
-                            Ver
-                          </Button>
-                        </Link>
-                        <Link
-                          href={`/dashboard/fichas-medicas/certificado/${certId}/imprimir`}
-                        >
-                          <Button variant="outline" size="sm">
-                            Imprimir
-                          </Button>
-                        </Link>
-                      </div>
+                      <Link
+                        href={`/dashboard/fichas-medicas/certificado/${certId}/imprimir`}
+                      >
+                        <Button variant="ghost" size="sm">
+                          <Printer className="mr-1 h-4 w-4" />
+                          Imprimir
+                        </Button>
+                      </Link>
                     </td>
                   </tr>
                 )

@@ -1,7 +1,7 @@
 import { connectDB } from '@/lib/db'
 import { FichaMedicaEvaluacion2 } from '@/lib/models'
 import { Button } from '@/components/ui/button'
-import { Plus, FileText } from 'lucide-react'
+import { Plus, FileText, Printer } from 'lucide-react'
 import Link from 'next/link'
 
 function formatDate(date: unknown): string {
@@ -75,10 +75,11 @@ export default async function FichaEva2ListPage() {
                     <td className="px-4 py-3">{formatDate(f.createdAt)}</td>
                     <td className="px-4 py-3 text-right">
                       <Link
-                        href={`/dashboard/fichas-medicas/evaluacion-2-3/${fichaId}`}
+                        href={`/dashboard/fichas-medicas/evaluacion-2-3/${fichaId}/imprimir`}
                       >
-                        <Button variant="outline" size="sm">
-                          Ver
+                        <Button variant="ghost" size="sm">
+                          <Printer className="mr-1 h-4 w-4" />
+                          Imprimir
                         </Button>
                       </Link>
                     </td>

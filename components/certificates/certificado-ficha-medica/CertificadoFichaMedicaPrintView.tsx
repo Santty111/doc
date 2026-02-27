@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Printer } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Printer } from 'lucide-react'
 import type { CertificadoFichaMedicaDocument } from '@/lib/types/certificado-ficha-medica'
 
 const PRINT_STYLES = `
@@ -127,9 +127,9 @@ function parseFecha(fecha: string): { dd: number; mm: number; aaaa: number } {
 }
 
 const mainTitle =
-  'border border-gray-300 bg-slate-200 px-4 py-3 text-center text-sm font-bold uppercase text-gray-900 cert-print-titulo'
+  'border border-gray-300 bg-sky-300 px-4 py-3 text-center text-sm font-bold uppercase text-gray-900 cert-print-titulo'
 const sectionHeader =
-  'border border-gray-300 bg-slate-200 px-4 py-2 text-left text-xs font-bold uppercase text-gray-900 cert-print-seccion'
+  'border border-gray-300 bg-sky-200 px-4 py-2 text-left text-xs font-bold uppercase text-gray-900 cert-print-seccion'
 const headerCell =
   'border border-gray-300 bg-emerald-100 px-2 py-1.5 text-left text-xs font-semibold text-gray-800'
 const dataCell =
@@ -168,18 +168,38 @@ export function CertificadoFichaMedicaPrintView({
         id="cert-ficha-print-root"
         className="min-h-screen w-full max-w-[210mm] mx-auto space-y-6 rounded-lg border bg-white p-6 overflow-x-hidden print:min-h-0 print:max-w-none print:mx-0 print:border-0 print:shadow-none print:p-0 print:overflow-visible"
       >
-        <div className="mb-6 flex flex-wrap items-center gap-4 print:hidden">
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <Printer className="mr-2 h-4 w-4" />
-            Imprimir / Ver PDF
-          </Button>
-          <Link href="/dashboard/fichas-medicas/certificado">
-            <Button variant="ghost" size="sm">Volver</Button>
-          </Link>
-          <p className="text-xs text-muted-foreground">
-            Si aparecen encabezados o pies de página, desmárcalos en la ventana
-            de impresión.
-          </p>
+        <div className="mb-6 print:hidden">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <Link href="/dashboard/fichas-medicas/certificado">
+                <Button variant="outline" size="sm">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Volver
+                </Button>
+              </Link>
+              <h1 className="min-w-0 flex-1 text-2xl font-semibold leading-tight text-gray-900">
+                Certificado de Ficha Médica
+              </h1>
+            </div>
+            <Link href="/dashboard/fichas-medicas/certificado">
+              <Button variant="outline" size="sm">
+                Finalizar
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+          <div className="rounded-lg border bg-card p-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Printer className="mr-2 h-4 w-4" />
+                Imprimir / Ver PDF
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Si aparecen encabezados o pies de página, desmárcalos en la ventana
+                de impresión.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div id="cert-ficha-print-content" className="w-full border border-gray-300">
@@ -241,7 +261,7 @@ export function CertificadoFichaMedicaPrintView({
           <table className="w-full border-collapse border-t-0 text-sm">
             <thead>
               <tr>
-                <th colSpan={4} className={`${sectionHeader} bg-slate-200`}>
+                <th colSpan={4} className={`${sectionHeader} bg-sky-100`}>
                   B. DATOS GENERALES
                 </th>
               </tr>
@@ -290,7 +310,7 @@ export function CertificadoFichaMedicaPrintView({
           <table className="w-full border-collapse border-t-0 text-sm">
             <thead>
               <tr>
-                <th colSpan={1} className={`${sectionHeader} bg-slate-200`}>
+                <th colSpan={1} className={`${sectionHeader} bg-sky-100`}>
                   C. APTITUD MÉDICA PARA EL TRABAJO
                 </th>
               </tr>
@@ -338,7 +358,7 @@ export function CertificadoFichaMedicaPrintView({
           <table className="w-full border-collapse border-t-0 text-sm">
             <thead>
               <tr>
-                <th className={`${sectionHeader} bg-slate-200`}>
+                <th className={`${sectionHeader} bg-sky-100`}>
                   D. RECOMENDACIONES / OBSERVACIONES
                 </th>
               </tr>
@@ -381,10 +401,10 @@ export function CertificadoFichaMedicaPrintView({
           <table className="cert-firma-final w-full border-collapse border-t-0 text-sm flex-1">
             <thead>
               <tr>
-                <th className={`${sectionHeader} bg-slate-200 border-r border-gray-300`} style={{ width: '50%' }}>
+                <th className={`${sectionHeader} bg-sky-100 border-r border-gray-300`} style={{ width: '50%' }}>
                   E. DATOS DEL PROFESIONAL
                 </th>
-                <th className={`${sectionHeader} bg-slate-200`} style={{ width: '50%' }}>
+                <th className={`${sectionHeader} bg-sky-100`} style={{ width: '50%' }}>
                   F. FIRMA DEL USUARIO
                 </th>
               </tr>

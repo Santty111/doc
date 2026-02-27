@@ -168,6 +168,7 @@ export const FICHA_EVA2_SECCION_G_ERGONOMICOS_DEFAULTS: FichaEva2SeccionGErgonom
 
 /** Sección G - Subsección PSICOSOCIALES */
 export interface FichaEva2SeccionGPsicosociales {
+  label_otros?: string
   factores: Record<FactorPsicosocialKey, FactorFisicoCampos>
 }
 

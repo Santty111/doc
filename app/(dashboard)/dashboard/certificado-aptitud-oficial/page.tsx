@@ -88,8 +88,6 @@ export default async function CertificadoAptitudOficialPage() {
                     <td className="px-4 py-3 text-right">
                       <Link
                         href={`/dashboard/certificado-aptitud-oficial/${certId}/imprimir`}
-                        target="_blank"
-                        rel="noopener noreferrer"
                       >
                         <Button variant="ghost" size="sm">
                           <Printer className="mr-1 h-4 w-4" />

@@ -92,8 +92,6 @@ export default async function FichaEva1ListPage() {
                     <td className="px-4 py-3 text-right">
                       <Link
                         href={`/dashboard/fichas-medicas/evaluacion-1-3/${fichaId}/imprimir`}
-                        target="_blank"
-                        rel="noopener noreferrer"
                       >
                         <Button variant="ghost" size="sm">
                           <Printer className="mr-1 h-4 w-4" />

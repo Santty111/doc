@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, FileDown } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Printer } from 'lucide-react'
 import type { FichaMedicaEvaluacion1Document } from '@/lib/types/ficha-medica-evaluacion-1'
 import { REGIONES_EXAMEN_FISICO_CONFIG } from '@/lib/constants/examen-fisico-regional'
 
@@ -152,7 +152,7 @@ const headerCell =
   'border border-gray-300 bg-emerald-100 px-2 py-1.5 text-left text-xs font-semibold uppercase text-gray-800'
 const dataCell =
   'border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900'
-const sectionHeader = 'border border-gray-300 bg-violet-200 px-2 py-1.5 text-left text-xs font-bold uppercase text-gray-900'
+const sectionHeader = 'border border-gray-300 bg-sky-200 px-2 py-1.5 text-left text-xs font-bold uppercase text-gray-900'
 
 function formatDate(iso: string | undefined): string {
   if (!iso || typeof iso !== 'string') return ''
@@ -202,23 +202,41 @@ export function FichaEva1PrintView({
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: PRINT_STYLES }} />
-      <div id="ficha-print-root" className="min-h-screen w-full max-w-[210mm] mx-auto bg-white p-6 print:p-0">
-        <div className="mb-6 flex flex-col gap-3 print:hidden">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard/fichas-medicas/evaluacion-1-3">
+      <div
+        id="ficha-print-root"
+        className="min-h-screen w-full max-w-[210mm] mx-auto space-y-6 rounded-lg border bg-white p-6 print:min-h-0 print:max-w-none print:mx-0 print:border-0 print:shadow-none print:p-0"
+      >
+        <div className="mb-6 print:hidden">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <Link href="/dashboard/fichas-medicas/evaluacion-1-3">
+                <Button variant="outline" size="sm">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Volver
+                </Button>
+              </Link>
+              <h1 className="min-w-0 flex-1 text-2xl font-semibold leading-tight text-gray-900">
+                Evaluación Ocupacional 1-3 — Datos Generales
+              </h1>
+            </div>
+            <Link href="/dashboard/fichas-medicas/evaluacion-2-3/nuevo">
               <Button variant="outline" size="sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Volver
+                Seguir 2-3
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <Button size="sm" onClick={() => window.print()}>
-              <FileDown className="mr-2 h-4 w-4" />
-              Guardar como PDF / Imprimir
-            </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Si al imprimir aparecen encabezados o pies de página, desmarca esa opción en la ventana de impresión.
-          </p>
+          <div className="rounded-lg border bg-card p-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Printer className="mr-2 h-4 w-4" />
+                Imprimir / Ver PDF
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Si al imprimir aparecen encabezados o pies de página, desmarca esa opción en la ventana de impresión.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div id="ficha-print-content" className="w-full max-w-full border border-gray-300 [&_table]:table-fixed [&_table]:w-full">
@@ -238,12 +256,12 @@ export function FichaEva1PrintView({
             </colgroup>
             <thead>
               <tr>
-                <th colSpan={7} className="border border-gray-300 bg-violet-700 px-4 py-2 text-center text-sm font-bold uppercase text-white">
+                <th colSpan={7} className="border border-gray-300 bg-sky-300 px-4 py-2 text-center text-sm font-bold uppercase text-gray-900">
                   FORMULARIO DE EVALUACIÓN MÉDICA OCUPACIONAL
                 </th>
               </tr>
               <tr>
-                <th colSpan={7} className={`${sectionHeader} bg-violet-100`}>
+                <th colSpan={7} className={`${sectionHeader} bg-sky-100`}>
                   A. DATOS DEL ESTABLECIMIENTO - DATOS DEL USUARIO
                 </th>
               </tr>
@@ -325,7 +343,7 @@ export function FichaEva1PrintView({
             <table className="w-full table-fixed border-collapse text-sm border-t-0">
               <thead>
                 <tr>
-                  <th colSpan={6} className={`${sectionHeader} bg-violet-100 border-t-0`}>
+                  <th colSpan={6} className={`${sectionHeader} bg-sky-100 border-t-0`}>
                     B. MOTIVO DE CONSULTA
                   </th>
                 </tr>
@@ -375,7 +393,7 @@ export function FichaEva1PrintView({
             <table className="w-full table-fixed border-collapse text-sm border-t-0">
               <thead>
                 <tr>
-                  <th colSpan={6} className={`${sectionHeader} bg-violet-100 border-t-0`}>
+                  <th colSpan={6} className={`${sectionHeader} bg-sky-100 border-t-0`}>
                     C. ANTECEDENTES PERSONALES
                   </th>
                 </tr>
@@ -518,7 +536,7 @@ export function FichaEva1PrintView({
             <table className="w-full table-fixed border-collapse text-sm border-t-0">
               <thead>
                 <tr>
-                  <th colSpan={6} className={`${sectionHeader} bg-violet-100 border-t-0`}>
+                  <th colSpan={6} className={`${sectionHeader} bg-sky-100 border-t-0`}>
                     D. ENFERMEDAD O PROBLEMA ACTUAL
                   </th>
                 </tr>
@@ -548,7 +566,7 @@ export function FichaEva1PrintView({
               </colgroup>
               <thead>
                 <tr>
-                  <th colSpan={9} className={`${sectionHeader} bg-violet-100 border-t-0`}>
+                  <th colSpan={9} className={`${sectionHeader} bg-sky-100 border-t-0`}>
                     E. CONSTANTES VITALES Y ANTROPOMETRÍA
                   </th>
                 </tr>
@@ -593,7 +611,7 @@ export function FichaEva1PrintView({
             <table className="w-full table-fixed border-collapse text-sm border-t-0">
               <thead>
                 <tr>
-                  <th colSpan={2} className={`${sectionHeader} bg-violet-100 border-t-0`}>
+                  <th colSpan={2} className={`${sectionHeader} bg-sky-100 border-t-0`}>
                     F. EXAMEN FÍSICO REGIONAL
                   </th>
                 </tr>
@@ -639,7 +657,7 @@ export function FichaEva1PrintView({
             <table className="w-full table-fixed border-collapse text-sm border-t-0">
               <thead>
                 <tr>
-                  <th colSpan={2} className={`${sectionHeader} bg-violet-100 border-t-0`}>
+                  <th colSpan={2} className={`${sectionHeader} bg-sky-100 border-t-0`}>
                     F. EXAMEN FÍSICO REGIONAL
                   </th>
                 </tr>

@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Printer } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Printer } from 'lucide-react'
 import Link from 'next/link'
 import type {
   FichaMedicaEvaluacion3Document,
@@ -89,7 +89,7 @@ const headerCell =
 const dataCell =
   'border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 print:px-1 print:py-0.5 print:text-[9px]'
 const sectionHeader =
-  'border border-gray-300 bg-violet-200 px-2 py-1.5 text-left text-xs font-bold uppercase text-gray-900 print:px-1 print:py-0.5 print:text-[9px]'
+  'border border-gray-300 bg-sky-200 px-2 py-1.5 text-left text-xs font-bold uppercase text-gray-900 print:px-1 print:py-0.5 print:text-[9px]'
 const subHeader =
   'border border-gray-300 bg-emerald-100 px-2 py-1.5 text-left text-xs font-medium text-gray-800 print:px-1 print:py-0.5 print:text-[9px]'
 const parentHeader =
@@ -127,18 +127,38 @@ export function FichaEva3PrintView({ data, autoPrint = false }: FichaEva3PrintVi
         id="ficha-eva3-print-root"
         className="min-h-screen w-full max-w-[210mm] mx-auto space-y-6 rounded-lg border bg-white p-6 overflow-x-hidden print:min-h-0 print:max-w-none print:mx-0 print:border-0 print:shadow-none print:p-0 print:overflow-visible"
       >
-        <div className="mb-6 flex flex-wrap items-center gap-4 print:hidden">
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
-            <Printer className="mr-2 h-4 w-4" />
-            Imprimir / Ver PDF
-          </Button>
-          <Link href="/dashboard/fichas-medicas/evaluacion-3-3">
-            <Button variant="ghost" size="sm">Volver</Button>
-          </Link>
-          <p className="text-xs text-muted-foreground">
-            Si aparecen encabezados o pies de página, desmárcalos en la ventana
-            de impresión.
-          </p>
+        <div className="mb-6 print:hidden">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <Link href="/dashboard/fichas-medicas/evaluacion-3-3">
+                <Button variant="outline" size="sm">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Volver
+                </Button>
+              </Link>
+              <h1 className="min-w-0 flex-1 text-2xl font-semibold leading-tight text-gray-900">
+                Evaluación Ocupacional 3-3 — Cierre de Evaluación
+              </h1>
+            </div>
+            <Link href="/dashboard/fichas-medicas/certificado/nuevo">
+              <Button variant="outline" size="sm">
+                Seguir Certificado
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+          <div className="rounded-lg border bg-card p-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Printer className="mr-2 h-4 w-4" />
+                Imprimir / Ver PDF
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Si aparecen encabezados o pies de página, desmárcalos en la ventana
+                de impresión.
+              </p>
+            </div>
+          </div>
         </div>
         <div id="ficha-eva3-print-content" className="w-full">
           <table className="ficha-eva3-tabla ficha-eva3-tabla-seccion-h w-full table-auto border-collapse text-sm print:table-fixed">
@@ -146,7 +166,7 @@ export function FichaEva3PrintView({ data, autoPrint = false }: FichaEva3PrintVi
               <tr>
                 <th
                   colSpan={13}
-                  className={`${sectionHeader} bg-violet-100 border-t border-gray-300`}
+                  className={`${sectionHeader} bg-sky-100 border-t border-gray-300`}
                 >
                   H. ACTIVIDAD LABORAL / INCIDENTES / ACCIDENTES / ENFERMEDADES
                   OCUPACIONALES
@@ -176,19 +196,19 @@ export function FichaEva3PrintView({ data, autoPrint = false }: FichaEva3PrintVi
                 </th>
                 <th
                   colSpan={3}
-                  className={`${parentHeader} border-b-emerald-300`}
+                  className={`${parentHeader} border-b-emerald-200`}
                 >
                   TRABAJO
                 </th>
                 <th
                   colSpan={3}
-                  className={`${parentHeader} border-b-emerald-300`}
+                  className={`${parentHeader} border-b-emerald-200`}
                 >
                   De los Accidentes de Trabajo y las Enfermedades Profesionales
                 </th>
                 <th
                   colSpan={4}
-                  className={`${parentHeader} border-b-emerald-300`}
+                  className={`${parentHeader} border-b-emerald-200`}
                 >
                   CALIFICADO POR INSTITUTO ECUATORIANO DE SEGURIDAD SOCIAL
                 </th>
@@ -275,7 +295,7 @@ export function FichaEva3PrintView({ data, autoPrint = false }: FichaEva3PrintVi
               <tr>
                 <th
                   colSpan={2}
-                  className={`${sectionHeader} bg-violet-100 border-t border-gray-300`}
+                  className={`${sectionHeader} bg-sky-100 border-t border-gray-300`}
                 >
                   I. ACTIVIDADES EXTRA LABORALES
                 </th>
@@ -320,7 +340,7 @@ export function FichaEva3PrintView({ data, autoPrint = false }: FichaEva3PrintVi
               <tr>
                 <th
                   colSpan={3}
-                  className={`${sectionHeader} bg-violet-100 border-t border-gray-300`}
+                  className={`${sectionHeader} bg-sky-100 border-t border-gray-300`}
                 >
                   J. RESULTADOS DE EXÁMENES GENERALES Y ESPECÍFICOS DE ACUERDO
                   AL RIESGO Y PUESTO DE TRABAJO (IMAGEN, LABORATORIO Y OTROS)
@@ -380,7 +400,7 @@ export function FichaEva3PrintView({ data, autoPrint = false }: FichaEva3PrintVi
               <tr>
                 <th
                   colSpan={4}
-                  className={`${sectionHeader} bg-violet-100 border-t border-gray-300`}
+                  className={`${sectionHeader} bg-sky-100 border-t border-gray-300`}
                 >
                   K. DIAGNÓSTICO
                 </th>
@@ -433,7 +453,7 @@ export function FichaEva3PrintView({ data, autoPrint = false }: FichaEva3PrintVi
               <tr>
                 <th
                   colSpan={4}
-                  className={`${sectionHeader} bg-violet-100 border-t border-gray-300`}
+                  className={`${sectionHeader} bg-sky-100 border-t border-gray-300`}
                 >
                   L. APTITUD MÉDICA PARA EL TRABAJO
                 </th>
@@ -484,7 +504,7 @@ export function FichaEva3PrintView({ data, autoPrint = false }: FichaEva3PrintVi
             <thead>
               <tr>
                 <th
-                  className={`${sectionHeader} bg-violet-100 border-t border-gray-300`}
+                  className={`${sectionHeader} bg-sky-100 border-t border-gray-300`}
                 >
                   M. RECOMENDACIONES Y/O TRATAMIENTO
                 </th>
@@ -510,7 +530,7 @@ export function FichaEva3PrintView({ data, autoPrint = false }: FichaEva3PrintVi
               <tr>
                 <th
                   colSpan={3}
-                  className={`${sectionHeader} bg-violet-100 border-t border-gray-300`}
+                  className={`${sectionHeader} bg-sky-100 border-t border-gray-300`}
                 >
                   N. RETIRO (evaluación)
                 </th>
@@ -568,12 +588,12 @@ export function FichaEva3PrintView({ data, autoPrint = false }: FichaEva3PrintVi
             <thead>
               <tr>
                 <th
-                  className={`${sectionHeader} bg-violet-100 border-t border-r border-gray-300 w-[70%]`}
+                  className={`${sectionHeader} bg-sky-100 border-t border-r border-gray-300 w-[70%]`}
                 >
                   O. DATOS DEL PROFESIONAL
                 </th>
                 <th
-                  className={`${sectionHeader} bg-violet-100 border-t border-gray-300 w-[30%]`}
+                  className={`${sectionHeader} bg-sky-100 border-t border-gray-300 w-[30%]`}
                 >
                   P. FIRMA DEL TRABAJADOR
                 </th>
