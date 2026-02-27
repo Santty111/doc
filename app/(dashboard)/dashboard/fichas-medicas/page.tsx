@@ -15,21 +15,21 @@ const HOJAS = [
     title: 'Evaluación Ocupacional 2-3',
     description: 'Formulario de evaluación médica ocupacional - Parte 2',
     href: '/dashboard/fichas-medicas/evaluacion-2-3',
-    available: false,
+    available: true,
   },
   {
     id: 'evaluacion-3-3',
     title: 'Evaluación Ocupacional 3-3',
     description: 'Formulario de evaluación médica ocupacional - Parte 3',
     href: '/dashboard/fichas-medicas/evaluacion-3-3',
-    available: false,
+    available: true,
   },
   {
     id: 'certificado',
     title: 'Certificado',
     description: 'Certificado de la ficha médica',
     href: '/dashboard/fichas-medicas/certificado',
-    available: false,
+    available: true,
   },
 ] as const
 

@@ -61,7 +61,7 @@ export function DashboardHeader({ profile }: HeaderProps) {
           </span>
         )}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger asChild id="dashboard-notifications-trigger">
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
               {count > 0 && (

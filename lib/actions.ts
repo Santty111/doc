@@ -10,7 +10,10 @@ import {
   Certificate,
   MedicalExam,
   CertificadoAptitudOficial,
+  CertificadoFichaMedica,
   FichaMedicaEvaluacion1,
+  FichaMedicaEvaluacion2,
+  FichaMedicaEvaluacion3,
 } from '@/lib/models'
 
 async function getUserId() {
@@ -174,6 +177,94 @@ export async function createFichaMedicaEvaluacion1(
   })
   revalidatePath('/dashboard/fichas-medicas')
   revalidatePath('/dashboard/fichas-medicas/evaluacion-1-3')
+  revalidatePath('/dashboard')
+  return { id: String(doc._id) }
+}
+
+export async function createFichaMedicaEvaluacion2(
+  data: Record<string, unknown>
+) {
+  const userId = await getUserId()
+  if (!userId) throw new Error('No autorizado')
+  await connectDB()
+  const doc = await FichaMedicaEvaluacion2.create({
+    seccionG: {
+      fisicos: data.seccionGFisicos != null ? toPlainObject(data.seccionGFisicos) : null,
+      seguridad: data.seccionGSeguridad != null ? toPlainObject(data.seccionGSeguridad) : null,
+      quimicos: data.seccionGQuimicos != null ? toPlainObject(data.seccionGQuimicos) : null,
+      biologicos: data.seccionGBiologicos != null ? toPlainObject(data.seccionGBiologicos) : null,
+      ergonomicos: data.seccionGErgonomicos != null ? toPlainObject(data.seccionGErgonomicos) : null,
+      psicosociales: data.seccionGPsicosociales != null ? toPlainObject(data.seccionGPsicosociales) : null,
+      medidas_preventivas: data.medidasPreventivas != null ? toPlainObject(data.medidasPreventivas) : null,
+    },
+    created_by: userId,
+  })
+  revalidatePath('/dashboard/fichas-medicas')
+  revalidatePath('/dashboard/fichas-medicas/evaluacion-2-3')
+  revalidatePath('/dashboard')
+  return { id: String(doc._id) }
+}
+
+export async function createFichaMedicaEvaluacion3(
+  data: Record<string, unknown>
+) {
+  const userId = await getUserId()
+  if (!userId) throw new Error('No autorizado')
+  await connectDB()
+  const doc = await FichaMedicaEvaluacion3.create({
+    seccionH: {
+      antecedentes: data.seccionHAntecedentes != null ? toPlainObject(data.seccionHAntecedentes) : [],
+    },
+    seccionI: {
+      actividades: data.seccionIActividades != null ? toPlainObject(data.seccionIActividades) : [],
+    },
+    seccionJ: {
+      resultados: data.seccionJResultados != null ? toPlainObject(data.seccionJResultados) : [],
+      observaciones: (data.seccionJObservaciones as string) ?? '',
+    },
+    seccionK: {
+      diagnosticos: data.seccionKDiagnosticos != null ? toPlainObject(data.seccionKDiagnosticos) : [],
+    },
+    seccionL: {
+      aptitud: (data.seccionLAptitud as string) ?? '',
+      observaciones: (data.seccionLObservaciones as string) ?? '',
+    },
+    seccionM: {
+      descripcion: (data.seccionMDescripcion as string) ?? '',
+    },
+    seccionN: {
+      se_realiza_evaluacion: data.seccionNSeRealizaEvaluacion as boolean | undefined,
+      condicion_salud_relacionada_trabajo: data.seccionNCondicionSaludRelacionadaTrabajo as boolean | undefined,
+      observacion: (data.seccionNObservacion as string) ?? '',
+    },
+    seccionO: {
+      nombres_apellidos_profesional: (data.seccionONombresApellidos as string) ?? '',
+      codigo_medico: (data.seccionOCodigoMedico as string) ?? '',
+    },
+    created_by: userId,
+  })
+  revalidatePath('/dashboard/fichas-medicas')
+  revalidatePath('/dashboard/fichas-medicas/evaluacion-3-3')
+  revalidatePath('/dashboard')
+  return { id: String(doc._id) }
+}
+
+export async function createCertificadoFichaMedica(
+  data: Record<string, unknown>
+) {
+  const userId = await getUserId()
+  if (!userId) throw new Error('No autorizado')
+  await connectDB()
+  const doc = await CertificadoFichaMedica.create({
+    seccionA: toPlainObject(data.seccionA) ?? {},
+    seccionB: toPlainObject(data.seccionB) ?? {},
+    seccionC: toPlainObject(data.seccionC) ?? {},
+    seccionD: toPlainObject(data.seccionD) ?? {},
+    seccionE: toPlainObject(data.seccionE) ?? {},
+    created_by: userId,
+  })
+  revalidatePath('/dashboard/fichas-medicas')
+  revalidatePath('/dashboard/fichas-medicas/certificado')
   revalidatePath('/dashboard')
   return { id: String(doc._id) }
 }

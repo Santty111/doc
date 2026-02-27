@@ -76,14 +76,12 @@ const PRINT_STYLES = `
     .ficha-pagina-1,
     .ficha-pagina-1 * {
       font-size: 9px !important;
-      line-height: 1.2 !important;
+      line-height: 1.3 !important;
     }
     .ficha-pagina-1 td,
     .ficha-pagina-1 th {
       padding: 2px 4px !important;
     }
-    .ficha-pagina-1 th[colSpan] { font-size: 10px !important; font-weight: 700 !important; }
-    .ficha-pagina-1 thead th:not([colSpan]) { font-size: 9px !important; }
     .ficha-pagina-1 {
       isolation: isolate !important;
       position: relative !important;
@@ -129,17 +127,13 @@ const PRINT_STYLES = `
     }
     .ficha-pagina-2,
     .ficha-pagina-2 * {
-      font-size: 10px !important;
-      line-height: 1.25 !important;
+      font-size: 9px !important;
+      line-height: 1.3 !important;
     }
     .ficha-pagina-2 td,
     .ficha-pagina-2 th {
       padding: 3px 5px !important;
       white-space: normal !important;
-    }
-    .ficha-pagina-2 th[colSpan] {
-      font-size: 11px !important;
-      font-weight: 700 !important;
     }
     .ficha-pagina-2 .ficha-pagina-2-pantalla {
       display: none !important;
@@ -360,7 +354,7 @@ export function FichaEva1PrintView({
                   <td className={dataCell} colSpan={5}>
                     {['ingreso', 'periodico', 'reintegro', 'retiro'].map((opt) => (
                       <span key={opt} className="inline-flex items-center gap-1 mr-4">
-                        <span className={`inline-flex h-3 w-3 items-center justify-center border text-[10px] ${seccionB?.tipo_evaluacion === opt ? 'border-gray-600 bg-gray-800 text-white' : 'border-gray-400'}`}>
+                        <span className={`inline-flex h-3 w-3 items-center justify-center border text-[9px] ${seccionB?.tipo_evaluacion === opt ? 'border-gray-600 bg-gray-800 text-white' : 'border-gray-400'}`}>
                           {seccionB?.tipo_evaluacion === opt ? 'X' : ''}
                         </span>
                         {TIPO_EVAL_LABELS[opt]}

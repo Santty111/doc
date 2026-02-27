@@ -34,7 +34,7 @@ const PRINT_STYLES = `
       top: 0 !important;
       width: 210mm !important;
       height: 297mm !important;
-      padding: 8mm 8mm 18mm 8mm !important;
+      padding: 4mm 8mm 18mm 8mm !important;
       box-sizing: border-box !important;
       overflow: hidden !important;
       page-break-inside: avoid !important;
@@ -463,7 +463,7 @@ export function CertificadoAptitudOficialPrintView({
                 <td className={`${dataCell} border-r border-gray-300`}>{seccionF.nombre_apellido}</td>
               </tr>
               <tr>
-                <td className={`${headerCell} border-r border-gray-300`}>CEDULA</td>
+                <td className={`${headerCell} border-r border-gray-300`}>CÓDIGO</td>
               </tr>
               <tr>
                 <td className={`${dataCell} border-r border-gray-300`}>{seccionF.codigo}</td>
